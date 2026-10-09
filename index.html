@@ -223,14 +223,15 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font:13
 </div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<section><h2>Kodes levels on this blog</h2>
+<section><h2>Kodes levels on this blog, and how to move up</h2>
 <table>
-<tr><td class="lv">N1 · Fan</td><td>Can like or disagree with posts.</td></tr>
-<tr><td class="lv">N2 · Distributor</td><td>Can also distribute posts.</td></tr>
-<tr><td class="lv">N3 · Commentator</td><td>Can also comment, and ask a journalist to co-author with you.</td></tr>
-<tr><td class="lv">N4 · Author</td><td>Can also write for the page (editors review every piece).</td></tr>
-<tr><td class="lv top">N5 · Newsroom</td><td>The six journalists (Road, Mountain bike, Gravel, Women's, AliExpress kit, Urban) and the two editors.</td></tr>
+<tr><td class="lv">N1 · Fan</td><td>Can like or disagree with posts.<br><span class="disc">How to get there: take the questionnaire (score 0-1).</span></td></tr>
+<tr><td class="lv">N2 · Distributor</td><td>Can also distribute posts.<br><span class="disc">How to get there: score 2-3 points.</span></td></tr>
+<tr><td class="lv">N3 · Commentator</td><td>Can also comment, and ask a journalist to co-author with you.<br><span class="disc">How to get there: score 4-5 points and make the commitment in question 6. Live version: your profile is verified (club or federation licence, Strava, or published work).</span></td></tr>
+<tr><td class="lv">N4 · Author</td><td>Can also write for the page (editors review every piece).<br><span class="disc">How to get there: score 6-7 points and make the commitment. Live version: verified published work.</span></td></tr>
+<tr><td class="lv top">N5 · Newsroom</td><td>The six journalists (Road, Mountain bike, Gravel, Women's, AliExpress kit, Urban) and the two editors.<br><span class="disc">By invitation only. It cannot be earned with points.</span></td></tr>
 </table>
+<p class="disc"><b>How points work (max 7):</b> relationship to cycling 0-3, publishing history 0-3, plus 1 for a thoughtful answer of 15+ words in question 5. You can retake the questionnaire at any time.</p>
 </section>
 <footer>A Kodes prototype · every post shows the level its author held when it was published · contact: peter@kodes.com.br</footer>
 </div>
@@ -325,6 +326,8 @@ function finishQ(){
   box.appendChild(res);
   var why = r.lvl===1?'You can like or disagree with posts.':r.lvl===2?'You can like, disagree and distribute posts.':r.lvl===3?'You can also comment on posts.':'You can also send posts to the editors for the page. Editors review every piece before it appears.';
   box.appendChild(el('p',null,why));
+  var nxt = r.lvl>=4 ? 'You are at the top of what points can earn. N5 is by invitation only.' : r.lvl===1 ? 'Next step: N2 starts at 2 points. You have '+r.pts+'.' : r.lvl===2 ? 'Next step: N3 starts at 4 points and needs the commitment in question 6. You have '+r.pts+'.' : 'Next step: N4 starts at 6 points. You have '+r.pts+'. N5 is by invitation only.';
+  box.appendChild(el('p','disc','Your score: '+r.pts+' of 7. '+nxt+' See "how to move up" at the bottom of the page.'));
   if(r.capped) box.appendChild(el('p','disc','Your answers would qualify for a higher level, but without the commitment in question 6 your level stops at N2. You can take the questionnaire again.'));
   box.appendChild(el('p','disc','Demo mode: this level is calculated in your browser and is not saved. In the live version, N3 and above would also verify your profile (for example a club or federation licence, or published work), and levels expire after 24 months with a re-check. N5 is the newsroom, by invitation only.'));
   var c=el('button','btn','Start taking part');c.setAttribute('data-do','close-q');box.appendChild(c);

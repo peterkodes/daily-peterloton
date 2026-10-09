@@ -142,6 +142,7 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font:13
 </section>
 <section class="take"><h2>Take part</h2>
 <div class="me" id="me"></div>
+<div class="res" id="path" hidden></div>
 <p class="disc">To take part you need a Kodes-ID. Your level decides what you can do: <b>N1</b> like or disagree, <b>N2</b> also distribute, <b>N3</b> also comment and ask a journalist to co-author with you, <b>N4</b> also write for the page. <b>N5</b> is the newsroom, by invitation only. Your level is set by a short questionnaire and applies to cycling only.</p>
 
 <div class="act" data-act="rx"><div class="req"><span>Needs N1 · Fan or above</span><span class="state"></span></div>
@@ -239,7 +240,8 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font:13
 (function(){
 var NAMES={1:'Fan',2:'Distributor',3:'Commentator',4:'Author',5:'Newsroom'};
 var NEED={rx:1,share:2,comment:3,coauthor:3,write:4};
-var st={level:0,name:'',id:'',until:''};
+var st={level:0,name:'',id:'',until:'',ep:0,committed:false,applied:false};
+var EP_NEED=30;
 var react={},counts={};
 var qStep=1;
 function $(s,r){return (r||document).querySelector(s)}
@@ -269,6 +271,28 @@ function refresh(){
     $('.gate',c).textContent='';
   });
   $('#demo-level').value=String(st.level);
+  renderPath();
+}
+function renderPath(){
+  var p=$('#path'); p.textContent='';
+  if(st.level===0||st.level>=5){p.hidden=true;return}
+  p.hidden=false;
+  p.appendChild(el('div','idc','Your path'));
+  var t,btns=[];
+  if(st.level===1){ t='Next: N2 · Distributor needs 2 questionnaire points. Retake the questionnaire and add a thoughtful answer in question 5 or tell us more about your cycling.'; btns.push(['retake','Retake the questionnaire']) }
+  else if(st.level===2){ t='Next: N3 · Commentator. Two things are needed: make the commitment in question 6 of the questionnaire, and earn '+EP_NEED+' engagement points. You have '+st.ep+' of '+EP_NEED+' and the commitment is '+(st.committed?'made.':'not made yet.')+' Points: like or disagree +2, distribute +5, invite a friend +30.'; btns.push(['invite','Invite a friend (+30)']); btns.push(['retake','Retake the questionnaire']) }
+  else if(st.level===3){ t='Next: N4 · Author. Apply to the editors: they look at your profile (in the live version a licence, Strava or published work) and your comments so far.'+(st.applied?' Your application was sent (demo).':''); if(!st.applied) btns.push(['apply','Apply for N4']) }
+  else { t='You are at the top level that can be earned. N5 · Newsroom is by invitation only.' }
+  p.appendChild(el('p',null,t));
+  if(st.level===2||st.level===3){ var bar=el('div','prog');var i=el('i');i.style.width=Math.min(100,Math.round(st.ep/EP_NEED*100))+'%';bar.appendChild(i);if(st.level===2)p.appendChild(bar) }
+  btns.forEach(function(b){var x=el('button','btn ghost',b[1]);x.setAttribute('data-do',b[0]);x.style.marginRight='8px';p.appendChild(x)});
+}
+function addEp(n,why){
+  if(st.level<2)return; st.ep+=n;
+  if(st.level===2&&st.ep>=EP_NEED&&st.committed){ setLevel(3,st.name); toast('You reached N3 · Commentator (demo)'); return }
+  if(st.level===2&&st.ep>=EP_NEED&&!st.committed) toast('You have the points for N3. Make the commitment in the questionnaire to unlock it.');
+  else toast('+'+n+' points ('+why+')');
+  renderPath();
 }
 function deny(card){
   var need=NEED[card.getAttribute('data-act')];
@@ -315,8 +339,9 @@ function score(){
 }
 function finishQ(){
   var r=score();
-  st.id='';st.until='';
+  st.id='';st.until='';st.committed=$('#q-decl').checked;
   setLevel(r.lvl,$('#q-name').value.trim());
+  if(st.committed&&r.lvl===2&&st.ep>=EP_NEED){setLevel(3,st.name)}
   var box=$('#q-res');box.textContent='';
   var res=el('div','res');
   res.appendChild(el('div','idc','Your level'));
@@ -342,19 +367,21 @@ document.addEventListener('click',function(e){
     var row=rx.closest('.rx'), desk=row.getAttribute('data-desk'), kind=rx.getAttribute('data-rx');
     counts[desk]=counts[desk]||{like:0,dis:0};
     if(react[desk]) counts[desk][react[desk]]--;
-    if(react[desk]===kind) react[desk]=null; else {react[desk]=kind;counts[desk][kind]++}
+    if(react[desk]===kind) react[desk]=null; else {react[desk]=kind;counts[desk][kind]++;addEp(2,'reaction')}
     $$('[data-rx]',row).forEach(function(b){var k=b.getAttribute('data-rx');b.classList.toggle('on',react[desk]===k);$('i',b).textContent=counts[desk][k]});
     return;
   }
   var d=e.target.closest('[data-do]'); if(!d)return;
   var a=d.getAttribute('data-do'), card=d.closest('.act');
-  if(a==='open-q')return openQ();
+  if(a==='open-q'||a==='retake')return openQ();
+  if(a==='invite'){ var u=location.href; if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u); addEp(30,'invite sent (demo)'); return }
+  if(a==='apply'){ st.applied=true; toast('Application sent to the editors (demo)'); renderPath(); return }
   if(a==='close-q')return closeQ();
   if(a==='q-back')return showStep(Math.max(1,qStep-1));
   if(a==='q-next'){var m=valid(qStep);if(m){$('#q-err').textContent=m;return} return qStep<6?showStep(qStep+1):finishQ()}
   if(a==='copy'){ if(!allowed(card))return; var url=location.href;
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){toast('Link copied')},function(){toast('Copy this link: '+url)})} else toast('Copy this link: '+url); return }
-  if(a==='mail'){ if(!allowed(card))return; location.href='mailto:?subject='+encodeURIComponent('The Daily Peterloton')+'&body='+encodeURIComponent('Today\'s cycling edition: '+location.href); return }
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){toast('Link copied')},function(){toast('Copy this link: '+url)})} else toast('Copy this link: '+url); addEp(5,'distributed'); return }
+  if(a==='mail'){ if(!allowed(card))return; location.href='mailto:?subject='+encodeURIComponent('The Daily Peterloton')+'&body='+encodeURIComponent('Today\'s cycling edition: '+location.href); addEp(5,'distributed'); return }
   if(a==='comment'){ if(!allowed(card))return; var t=$('#cm-text').value.trim(); if(!t){$('.gate',card).textContent='Write a comment first.';return}
     var item=el('div','cm'); var b=el('b',null,st.name+' '); item.appendChild(b); item.appendChild(el('span','pill',label(st.level)));
     item.appendChild(el('div',null,'On: '+$('#cm-post').selectedOptions[0].textContent)); item.appendChild(el('div',null,t));

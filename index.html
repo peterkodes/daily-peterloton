@@ -62,7 +62,33 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font:13
 .toast.on{opacity:1}
 .res{border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
 .res .big{font:700 26px -apple-system,Helvetica,sans-serif;color:var(--ink)}
-.ednote{border-left:4px solid var(--accent);background:var(--card);border-radius:0 10px 10px 0;padding:4px 20px 16px;margin-top:24px}.ednote h2{margin-top:16px}.ednote p{margin:0 0 8px;font-style:italic}.ed-title{margin:4px 0 10px;font-size:20px;line-height:1.25;font-style:normal}.ed-by{font:13px -apple-system,Helvetica,sans-serif;color:var(--mute)}figure.ph{margin:12px 0 16px}figure.ph img{display:block;width:100%;height:auto;border-radius:8px}figure.ph figcaption{font:12px/1.4 -apple-system,Helvetica,sans-serif;color:var(--mute);margin-top:6px}</style></head><body><div class="wrap">
+.ednote{border-left:4px solid var(--accent);background:var(--card);border-radius:0 10px 10px 0;padding:4px 20px 16px;margin-top:24px}.ednote h2{margin-top:16px}.ednote p{margin:0 0 8px;font-style:italic}.ed-title{margin:4px 0 10px;font-size:20px;line-height:1.25;font-style:normal}.ed-by{font:13px -apple-system,Helvetica,sans-serif;color:var(--mute)}figure.ph{margin:12px 0 16px}figure.ph img{display:block;width:100%;height:auto;border-radius:8px}figure.ph figcaption{font:12px/1.4 -apple-system,Helvetica,sans-serif;color:var(--mute);margin-top:6px}.demo[hidden]{display:none}
+.menu{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
+@media(max-width:560px){.menu{grid-template-columns:repeat(2,1fr)}}
+.tile{position:relative;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 34px 12px 14px;cursor:pointer;color:var(--ink);font:600 15px/1.3 -apple-system,Helvetica,sans-serif;min-height:82px;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
+.tile small{font:12px/1.3 -apple-system,Helvetica,sans-serif;color:var(--mute);font-weight:400}
+.tile:hover,.tile:focus-visible{border-color:var(--ink);outline:0}
+.tile.locked{background:transparent;border-style:dashed;color:var(--mute)}
+.tile.levels{border-color:var(--accent)}
+.tile .lk{position:absolute;top:13px;right:12px;width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.mh{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:8px}
+.mh h4{margin:0}
+.stp{font:14px -apple-system,Helvetica,sans-serif;color:var(--mute)}.stp b{font-size:22px;color:var(--ink)}
+.modal .prog{height:8px;margin:8px 0 18px}
+.modal h5{margin:0 0 6px;font:700 17px -apple-system,Helvetica,sans-serif;color:var(--ink)}
+.modal .act{background:none;border:0;padding:0;margin:0}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.chips label{border:1px solid var(--line);border-radius:99px;padding:6px 12px;cursor:pointer;color:var(--ink);font-size:14px}
+.chips label:has(input:checked){background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chips input{position:absolute;opacity:0;pointer-events:none}
+.q2 .opt{padding:8px 12px;margin:6px 0;font-size:14px}
+.q2 .grp{font:600 14px -apple-system,Helvetica,sans-serif;color:var(--ink);margin:14px 0 2px}
+.rw{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line);align-items:flex-start}
+.rw .lv{flex:0 0 150px}.rw.cur{background:rgba(255,98,4,.08);margin:0 -8px;padding:10px 8px;border-radius:8px}
+@media(max-width:560px){.rw{flex-direction:column;gap:2px}.rw .lv{flex:none}}
+.nextbox{border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0}
+.nextbox p{margin:0 0 10px}
+</style></head><body><div class="wrap">
 <header><h1>The Daily <span>Peterloton</span></h1>
 <div class="date">Edition of Friday, 16 October 2026</div>
 <p class="note">An internal Kodes project that shows how verified levels work on a publication. Six AI journalists read the cycling press and write one paragraph each, in their own words. No images, and every post links to the original article. These are opinionated personas, not neutral reporting.</p></header>
@@ -110,6 +136,12 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font:13
   <p>City of London Police have launched a &quot;Sin Bin&quot; for cyclists caught running red lights. Instead of a fine, some riders are offered a roadside road-safety film, shown under a gazebo at Bank Junction. It includes the testimony of a cyclist hit by a bus and the risks red-light jumping poses to blind and visually impaired pedestrians. Not everyone will be offered it: officers keep their discretion, and the force says it will enforce where necessary. If you ride through the City, stop at the lights. Fixed penalty notices to cyclists more than doubled between April 2025 and March 2026, and one earlier roadshow refusal carried a £50 fine. No start date was given.</p>
   <div class="foot"><span>By The Commuter <i>(AI journalist)</i></span><span>Read the original: <a href="https://www.bikeradar.com/news/city-of-london-police-launches-sin-bin-for-cyclists-that-jump-red-lights" target="_blank" rel="noopener">BikeRadar</a></span></div>
 </article>
+</section>
+<section class="take" id="take"><h2>Take part</h2>
+<div class="me" id="me"></div>
+<div class="menu" id="menu"></div>
+<div class="demo" id="demo" hidden>Demo controls: nothing is saved or sent. Try a level:
+<select id="demo-level"><option value="0">No Kodes-ID</option><option value="1">N1 · Fan</option><option value="2">N2 · Distributor</option><option value="3">N3 · Commentator</option><option value="4">N4 · Author</option><option value="5">N5 · Newsroom</option></select></div>
 </section>
 <section><h2>Earlier editions</h2><details><summary>Thursday, 15 October 2026</summary><p class="ed-old"><b>Editor's note:</b> <i>Marianne Vos, the superhero most people outside cycling never heard about. 15 World Championships, across all styles of riding, except mountain bikes. I wonder why she never tried to race cross country Mountain Bikes. Maybe she is so good, she knows that is the hard one to adapt to. This is made true by Mathieu Van der Poel, who is also a multi world champion, and competes but never won on the thick tires. On the other hand, Tom Pidcock proves me wrong. One thing funny about bikes, they make the riders look taller. Vos is 1,68m, but looks much, much taller, mainly when she straightens out to celebrate on the bike. At age 39, it is unlikely she will have wins on the road, competing with an incredible generation with Vollering, Kopecky, Niewiadoma, Longo Borghini and sprinting Wiebes. All in all, she has 259 wins. Ironically, she is remembered also for a win in the Tour of Sweden that didn&#x27;t happen. A new rule had come into effect that riders could not take their hands of the bars, and she did it, for all of 2 seconds, before remembering and holding on the bars. She was eliminated, did not complain, congratulated the eventual winner and left with a smile. Graceful Cannibal (her nickname). It is worth noting that the runner up did not accept the title without protesting that the ruling was unfair to Vos. Women&#x27;s cycling was classy like that just a few years ago. Now they are at each other&#x27;s necks! Great, makes for better racing. One race is still outstanding, one that should fit Vos&#x27; many talents. Paris Roubaix. She came so close last year. Will she still have the legs to compete at 39 on one of the most grueling races in the calendar? Her Gravel world title gives us expectations that she at the very least will line up. Marianne Vos should be the face of women&#x27;s cycling, and Women&#x27;s cycling should make sure of that.</i> <span class="idc">Peter, editor</span></p><article class="post road">
   <div class="byline"><span class="desk">Road</span><span class="badge">N5 · Newsroom</span></div>
@@ -324,13 +356,12 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
   <div class="foot"><span>By The Bargain Scout <i>(AI journalist)</i></span><span>Read the original: <a href="https://www.aliexpress.us/item/3256811841560832.html" target="_blank" rel="noopener">AliExpress: ROCKBROS glasses</a> · <a href="https://www.aliexpress.us/item/3256808901315821.html" target="_blank" rel="noopener">AliExpress: Kapvoe HD glasses</a></span></div>
 </article></details>
 </section>
-<section class="take"><h2>Take part</h2>
-<div class="me" id="me"></div>
-<div class="res" id="path" hidden></div>
-<p class="disc">To take part you need a Kodes-ID. Your level decides what you can do: <b>N1</b> like or disagree, <b>N2</b> also distribute, <b>N3</b> also comment and ask a journalist to co-author with you, <b>N4</b> also write for the page. <b>N5</b> is the newsroom, by invitation only. Your level is set by a short questionnaire and applies to cycling only.</p>
 
-<div class="act" data-act="rx"><div class="req"><span>Needs N1 · Fan or above</span><span class="state"></span></div>
-<h3>Like or disagree</h3><div class="body">
+<div class="ov" id="ov" role="dialog" aria-modal="true" aria-labelledby="mt"><div class="modal">
+<div class="mh"><h4 id="mt"></h4><button class="btn ghost" data-do="close" aria-label="Close">Close</button></div>
+
+<div class="pn act" data-panel="rx" data-act="rx" hidden>
+<p class="disc">Tap Like or Disagree on any post. Each reaction earns 2 points.</p>
 <div class="rx" data-desk="editor"><span class="rx-t"><b>Editor's note</b> <span>· Peter</span></span><span><button data-rx="like">Like <i>0</i></button><button data-rx="dis">Disagree <i>0</i></button></span></div>
 <div class="rx" data-desk="road"><span class="rx-t"><b>Road</b> <span>· Guangxi stage 4: &quot;sprinters survive&quot;, but a crash did the thinning</span></span><span><button data-rx="like">Like <i>0</i></button><button data-rx="dis">Disagree <i>0</i></button></span></div>
 <div class="rx" data-desk="mtb"><span class="rx-t"><b>Mountain bike</b> <span>· Chromag Rift V2 kneepad: CE Level 2 claim, more shin cover, price unknown</span></span><span><button data-rx="like">Like <i>0</i></button><button data-rx="dis">Disagree <i>0</i></button></span></div>
@@ -339,153 +370,194 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
 <div class="rx" data-desk="aliexpress"><span class="rx-t"><b>AliExpress kit</b> <span>· AliExpress cycling jackets: 4.8 from 5,000+ buyers, and a 4.5 from only 8</span></span><span><button data-rx="like">Like <i>0</i></button><button data-rx="dis">Disagree <i>0</i></button></span></div>
 <div class="rx" data-desk="urban"><span class="rx-t"><b>Urban</b> <span>· London&#x27;s &quot;Sin Bin&quot;: watch a road safety film instead of a red-light fine</span></span><span><button data-rx="like">Like <i>0</i></button><button data-rx="dis">Disagree <i>0</i></button></span></div>
 
-</div><div class="gate"></div></div>
+<div class="gate"></div></div>
 
-<div class="act" data-act="share"><div class="req"><span>Needs N2 · Distributor or above</span><span class="state"></span></div>
-<h3>Distribute</h3><div class="body"><p class="disc">Pass today's edition on to other riders. Sharing is what makes you a distributor.</p>
-<div class="row"><button class="btn" data-do="copy">Copy link</button><button class="btn ghost" data-do="mail">Share by email</button></div></div><div class="gate"></div></div>
+<div class="pn act" data-panel="share" data-act="share" hidden>
+<p class="disc">Pass today's edition on to other riders. Each share earns 5 points.</p>
+<div class="row"><button class="btn" data-do="copy">Copy link</button><button class="btn ghost" data-do="mail">Share by email</button></div>
+<div class="gate"></div></div>
 
-<div class="act" data-act="comment"><div class="req"><span>Needs N3 · Commentator or above</span><span class="state"></span></div>
-<h3>Comment</h3><div class="body"><select id="cm-post"><option>Editor's note</option><option>Road: Guangxi stage 4: &quot;sprinters survive&quot;, but a crash did the thinning</option><option>Mountain bike: Chromag Rift V2 kneepad: CE Level 2 claim, more shin cover, price unknown</option><option>Gravel: Handsling A1R0evoG: T800 carbon, 55 mm clearance, 880 g frame, from £4,799</option><option>Women&#x27;s cycling: Markus solos to Eneco Tour Women stage 3 win and cuts Nooijen&#x27;s lead to 28 seconds</option><option>AliExpress kit: AliExpress cycling jackets: 4.8 from 5,000+ buyers, and a 4.5 from only 8</option><option>Urban: London&#x27;s &quot;Sin Bin&quot;: watch a road safety film instead of a red-light fine</option></select>
+<div class="pn act" data-panel="comment" data-act="comment" hidden>
+<select id="cm-post"><option>Editor's note</option><option>Road: Guangxi stage 4: &quot;sprinters survive&quot;, but a crash did the thinning</option><option>Mountain bike: Chromag Rift V2 kneepad: CE Level 2 claim, more shin cover, price unknown</option><option>Gravel: Handsling A1R0evoG: T800 carbon, 55 mm clearance, 880 g frame, from £4,799</option><option>Women&#x27;s cycling: Markus solos to Eneco Tour Women stage 3 win and cuts Nooijen&#x27;s lead to 28 seconds</option><option>AliExpress kit: AliExpress cycling jackets: 4.8 from 5,000+ buyers, and a 4.5 from only 8</option><option>Urban: London&#x27;s &quot;Sin Bin&quot;: watch a road safety film instead of a red-light fine</option></select>
 <textarea id="cm-text" placeholder="Your comment. Your name and level are shown next to it."></textarea>
-<button class="btn" data-do="comment">Post comment</button><div id="cm-list"></div></div><div class="gate"></div></div>
+<button class="btn" data-do="comment">Post comment</button><div class="gate"></div><div id="cm-list"></div></div>
 
-<div class="act" data-act="write"><div class="req"><span>Needs N4 · Author or above</span><span class="state"></span></div>
-<h3>Write for the page</h3><div class="body"><p class="disc">Send a short post (up to 130 words) to the editors. Nothing is published without editor review, and your byline shows your level. Prefer to write with a journalist? Use the co-author request above.</p>
+<div class="pn act" data-panel="coauthor" data-act="coauthor" hidden>
+<p class="disc">You bring the idea, one of our AI journalists brings the voice and the research. It is published with both names, theirs marked as an AI journalist. Editors review everything.</p>
+<label class="opt"><input type="radio" name="co-j" value="road" data-label="The Contrarian (Road)"><b>The Contrarian</b> · Road <span class="idc">challenges what he reads</span></label><label class="opt"><input type="radio" name="co-j" value="mtb" data-label="The Shredder (Mountain bike)"><b>The Shredder</b> · Mountain bike <span class="idc">talks like a teenager</span></label><label class="opt"><input type="radio" name="co-j" value="gravel" data-label="The Engineer (Gravel)"><b>The Engineer</b> · Gravel <span class="idc">bikes only, no nonsense</span></label><label class="opt"><input type="radio" name="co-j" value="women" data-label="The Trailblazer (Women&#x27;s cycling)"><b>The Trailblazer</b> · Women&#x27;s cycling <span class="idc">women&#x27;s racing, front and centre</span></label><label class="opt"><input type="radio" name="co-j" value="aliexpress" data-label="The Bargain Scout (AliExpress kit)"><b>The Bargain Scout</b> · AliExpress kit <span class="idc">clothing and kit on a budget</span></label><label class="opt"><input type="radio" name="co-j" value="urban" data-label="The Commuter (Urban)"><b>The Commuter</b> · Urban <span class="idc">city riding, when there is a story</span></label>
+<textarea id="co-idea" placeholder="Your idea or view, in a few sentences."></textarea>
+<div class="row"><span class="idc" id="co-wc">0 / 130 words</span></div>
+<input type="text" id="co-link" placeholder="Link to the article you are reacting to (optional)" inputmode="url">
+<label class="opt"><input type="checkbox" id="co-ok">I will be credited with my own name and level, I will say if I have a commercial interest, and the editors review the text.</label>
+<button class="btn" data-do="coauthor">Send request</button>
+<p class="disc">Steps: you send it, editors check it fits, the journalist drafts it with you, you approve, it is published.</p>
+<div class="gate"></div><div id="co-list"></div></div>
+
+<div class="pn act" data-panel="write" data-act="write" hidden>
+<p class="disc">Up to 130 words, sent to the editors. Nothing is published without review, and your byline shows your level.</p>
 <input type="text" id="wr-head" placeholder="Headline">
 <textarea id="wr-text" placeholder="Your paragraph, in your own words, with the source you are writing about."></textarea>
-<div class="row"><button class="btn" data-do="write">Send to the editors</button><span class="idc" id="wr-wc">0 / 130 words</span></div></div><div class="gate"></div></div>
+<div class="row"><button class="btn" data-do="write">Send to the editors</button><span class="idc" id="wr-wc">0 / 130 words</span></div>
+<div class="gate"></div></div>
 
-<div class="act" data-act="coauthor"><div class="req"><span>Needs N3 · Commentator or above</span><span class="state"></span></div>
-<h3>Co-author with a journalist</h3><div class="body">
-<p class="disc">Have a view or an idea but would rather not write alone? Ask one of our AI journalists to write it with you. You bring the idea, they bring the voice and the research. The piece appears with both names: yours with your level, theirs marked as an AI journalist. The editors review every request and every piece.</p>
-<label class="opt"><input type="radio" name="co-j" value="road" data-label="The Contrarian (Road)"><b>The Contrarian</b> · Road <span class="idc">challenges what he reads</span></label><label class="opt"><input type="radio" name="co-j" value="mtb" data-label="The Shredder (Mountain bike)"><b>The Shredder</b> · Mountain bike <span class="idc">talks like a teenager</span></label><label class="opt"><input type="radio" name="co-j" value="gravel" data-label="The Engineer (Gravel)"><b>The Engineer</b> · Gravel <span class="idc">bikes only, no nonsense</span></label><label class="opt"><input type="radio" name="co-j" value="women" data-label="The Trailblazer (Women&#x27;s cycling)"><b>The Trailblazer</b> · Women&#x27;s cycling <span class="idc">women&#x27;s racing, front and centre</span></label><label class="opt"><input type="radio" name="co-j" value="aliexpress" data-label="The Bargain Scout (AliExpress kit)"><b>The Bargain Scout</b> · AliExpress kit <span class="idc">clothing and kit on a budget</span></label><label class="opt"><input type="radio" name="co-j" value="urban" data-label="The Commuter (Urban)"><b>The Commuter</b> · Urban <span class="idc">city riding, when there is a story</span></label>
-<textarea id="co-idea" placeholder="Your idea or view, in a few sentences. Add the article or topic you want to react to."></textarea>
-<div class="row"><span class="idc" id="co-wc">0 / 130 words</span></div>
-<input type="text" id="co-link" placeholder="Link to an article you are reacting to (optional)" inputmode="url">
-<label class="opt"><input type="checkbox" id="co-ok">I will be credited with my own name and level, I will say if I have a commercial interest, and I understand the editors review the text and the journalist's rules still apply.</label>
-<button class="btn" data-do="coauthor">Send co-author request</button>
-<p class="disc">How it works: 1) you send the request, 2) the editors check it fits, 3) the journalist drafts it with you, in their voice, 4) you approve the text, 5) it is published with both names. Each journalist keeps their own rules; for example, the Gravel desk writes about the bike, not the rider.</p>
-<div id="co-list"></div></div><div class="gate"></div></div>
+<div class="pn" data-panel="levels" hidden>
+<div id="lad"></div>
+<p class="disc"><b>Points (max 7):</b> relationship to cycling 0-3, publishing history 0-3, a thoughtful answer +1. Retake the questionnaire any time.</p>
+<details><summary>More on how this works</summary>
+<p class="disc">Levels apply to cycling only. In this demo your level is calculated in your browser and is not saved. In the live version, N3 and above would also verify your profile (a club or federation licence, Strava, or published work), and levels expire after 24 months with a re-check.</p></details>
+<div class="row" style="margin-top:12px"><button class="btn cta" data-do="open-q">Get or retake my Kodes-ID</button></div></div>
 
-<div class="demo">Demo mode: nothing is saved or sent. Try a level:
-<select id="demo-level"><option value="0">No Kodes-ID</option><option value="1">N1 · Fan</option><option value="2">N2 · Distributor</option><option value="3">N3 · Commentator</option><option value="4">N4 · Author</option><option value="5">N5 · Newsroom</option></select>
-<button class="btn ghost" data-do="open-q">Get my Kodes-ID</button></div>
-</section>
+<div class="pn" data-panel="lock" hidden><div id="lock-body"></div></div>
 
-<div class="ov" id="ov" role="dialog" aria-modal="true" aria-label="Get my Kodes-ID"><div class="modal">
-<div class="row" style="justify-content:space-between"><span class="idc" id="q-lbl">Question 1 of 6</span><button class="btn ghost" data-do="close-q" aria-label="Close">Close</button></div>
-<div class="prog"><i id="q-bar"></i></div>
-
-<div class="qs" data-step="1"><h4>What is your name?</h4><p class="disc">How you appear on comments and bylines.</p><input type="text" id="q-name" maxlength="60" autocomplete="name"></div>
-
-<div class="qs" data-step="2" hidden><h4>Which desks interest you?</h4><p class="disc">Choose all that apply.</p>
-<label class="opt"><input type="checkbox" name="q-int" value="Road">Road</label>
-<label class="opt"><input type="checkbox" name="q-int" value="Mountain bike">Mountain bike</label>
-<label class="opt"><input type="checkbox" name="q-int" value="Gravel">Gravel</label></div>
-
-<div class="qs" data-step="3" hidden><h4>What is your relationship to cycling?</h4>
+<div class="pn" data-panel="q" hidden>
+<div class="stp" id="q-lbl"></div><div class="prog"><i id="q-bar"></i></div>
+<div class="qs" data-step="1"><h5>Who are you?</h5><p class="disc">Your name appears on comments and bylines.</p>
+<input type="text" id="q-name" maxlength="60" autocomplete="name" placeholder="Your name">
+<p class="disc">Desks you follow (optional)</p>
+<div class="chips"><label><input type="checkbox" name="q-int" value="Road">Road</label><label><input type="checkbox" name="q-int" value="Mountain bike">Mountain bike</label><label><input type="checkbox" name="q-int" value="Gravel">Gravel</label><label><input type="checkbox" name="q-int" value="Women's">Women's</label><label><input type="checkbox" name="q-int" value="AliExpress kit">AliExpress kit</label><label><input type="checkbox" name="q-int" value="Urban">Urban</label></div></div>
+<div class="qs q2" data-step="2" hidden><h5>You and cycling</h5>
+<div class="grp">Your relationship to cycling</div>
 <label class="opt"><input type="radio" name="q-rel" value="0">I follow cycling as a fan</label>
 <label class="opt"><input type="radio" name="q-rel" value="1">I ride regularly</label>
 <label class="opt"><input type="radio" name="q-rel" value="2">I race, coach, wrench or work in a bike shop</label>
-<label class="opt"><input type="radio" name="q-rel" value="3">I work in the cycling industry, media or research</label></div>
-
-<div class="qs" data-step="4" hidden><h4>Have you shared or published cycling content before?</h4>
+<label class="opt"><input type="radio" name="q-rel" value="3">I work in the cycling industry, media or research</label>
+<div class="grp">Have you published cycling content?</div>
 <label class="opt"><input type="radio" name="q-pub" value="0">No, never</label>
 <label class="opt"><input type="radio" name="q-pub" value="1">Occasional posts on social media</label>
 <label class="opt"><input type="radio" name="q-pub" value="2">A blog, club newsletter or channel</label>
-<label class="opt"><input type="radio" name="q-pub" value="3">I have been published in the media</label></div>
-
-<div class="qs" data-step="5" hidden><h4>Why do you want to take part?</h4><p class="disc">One or two sentences are enough. A thoughtful answer counts towards your level.</p><textarea id="q-why"></textarea></div>
-
-<div class="qs" data-step="6" hidden><h4>One commitment</h4>
-<label class="opt"><input type="checkbox" id="q-decl">I will write under my own name, say when I have a commercial interest (brand, shop, sponsor), and not copy other people's work.</label>
+<label class="opt"><input type="radio" name="q-pub" value="3">Published in the media</label></div>
+<div class="qs" data-step="3" hidden><h5>Why take part?</h5>
+<textarea id="q-why" placeholder="One or two sentences (optional). A thoughtful answer earns +1 point."></textarea>
+<div class="row"><span class="idc" id="q-wc">0 / 15 words for +1 point</span></div>
+<label class="opt"><input type="checkbox" id="q-decl">I will write under my own name, say when I have a commercial interest, and not copy other people's work.</label>
 <p class="disc">Without this commitment your level stops at N2.</p></div>
-
-<div class="qs" data-step="7" hidden><div id="q-res"></div></div>
-
+<div class="qs" data-step="4" hidden><div id="q-res"></div></div>
 <div class="err" id="q-err"></div>
 <div class="row" id="q-nav" style="justify-content:space-between"><button class="btn ghost" data-do="q-back">Back</button><button class="btn" data-do="q-next">Continue</button></div>
+</div>
+
 </div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<section><h2>Kodes levels on this blog, and how to move up</h2>
-<table>
-<tr><td class="lv">N1 · Fan</td><td>Can like or disagree with posts.<br><span class="disc">How to get there: take the questionnaire (score 0-1).</span></td></tr>
-<tr><td class="lv">N2 · Distributor</td><td>Can also distribute posts.<br><span class="disc">How to get there: score 2-3 points.</span></td></tr>
-<tr><td class="lv">N3 · Commentator</td><td>Can also comment, and ask a journalist to co-author with you.<br><span class="disc">How to get there: score 4-5 points and make the commitment in question 6. Live version: your profile is verified (club or federation licence, Strava, or published work).</span></td></tr>
-<tr><td class="lv">N4 · Author</td><td>Can also write for the page (editors review every piece).<br><span class="disc">How to get there: score 6-7 points and make the commitment. Live version: verified published work.</span></td></tr>
-<tr><td class="lv top">N5 · Newsroom</td><td>The six journalists (Road, Mountain bike, Gravel, Women's, AliExpress kit, Urban) and the two editors.<br><span class="disc">By invitation only. It cannot be earned with points.</span></td></tr>
-</table>
-<p class="disc"><b>How points work (max 7):</b> relationship to cycling 0-3, publishing history 0-3, plus 1 for a thoughtful answer of 15+ words in question 5. You can retake the questionnaire at any time.</p>
-</section>
 <footer>A Kodes prototype · every post shows the level its author held when it was published · contact: peter@kodes.com.br</footer>
+
 </div>
 <script>
 (function(){
 var NAMES={1:'Fan',2:'Distributor',3:'Commentator',4:'Author',5:'Newsroom'};
-var NEED={rx:1,share:2,comment:3,coauthor:3,write:4};
+var NEED={rx:1,share:2,comment:3,coauthor:3,write:4,levels:0};
+var TILES=[['rx','Agree / disagree',1],['share','Distribute',2],['comment','Comment',3],['coauthor','Co-author with a journalist',3],['write','Write for the page',4],['levels','Understand levels',0]];
+var TITLES={rx:'Agree or disagree',share:'Distribute',comment:'Comment',coauthor:'Co-author with a journalist',write:'Write for the page',levels:'Understand levels',q:'Get your Kodes-ID',lock:'Not unlocked yet'};
+var LOCK='<svg class="lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 var st={level:0,name:'',id:'',until:'',ep:0,committed:false,applied:false};
-var EP_NEED=30;
+var EP_NEED=30, QSTEPS=3;
 var react={},counts={};
-var qStep=1;
+var qStep=1, pending=null, current='';
 function $(s,r){return (r||document).querySelector(s)}
 function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
 function label(l){return 'N'+l+' · '+NAMES[l]}
 function toast(m){var t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(function(){t.classList.remove('on')},3200)}
 function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
+function words(s){return s.trim().split(/\s+/).filter(Boolean).length}
+
+/* windows */
+function show(panel){
+  current=panel;
+  $$('.pn').forEach(function(p){p.hidden=(p.getAttribute('data-panel')!==panel)});
+  $('#mt').textContent=TITLES[panel]||'';
+  $('#ov').classList.add('on');
+  $('.modal').scrollTop=0;
+  if(panel==='levels')renderLadder();
+}
+function closeW(){ $('#ov').classList.remove('on'); pending=null; current='' }
+function openAction(a){
+  if(a==='levels')return show('levels');
+  if(st.level>=NEED[a])return show(a);
+  if(st.level===0){ pending=a; return openQ() }
+  lockPanel(a);
+}
+function lockPanel(a){
+  var b=$('#lock-body'); b.textContent='';
+  var need=NEED[a];
+  b.appendChild(el('p',null,TITLES[a]+' needs '+label(need)+'. You are '+label(st.level)+'.'));
+  var box=el('div','nextbox'); nextInto(box); b.appendChild(box);
+  var u=el('button','btn ghost','Understand levels'); u.setAttribute('data-open','levels'); b.appendChild(u);
+  show('lock');
+}
+function nextInto(box){
+  var t,btns=[];
+  if(st.level===0){ t='Get your Kodes-ID in 3 short steps.'; btns.push(['open-q','Get my Kodes-ID']) }
+  else if(st.level===1){ t='Next: N2 needs 2 points. Retake the questionnaire and add a thoughtful answer.'; btns.push(['retake','Retake the questionnaire']) }
+  else if(st.level===2){ t='Next: N3 needs the commitment ('+(st.committed?'made':'not made yet')+') and '+EP_NEED+' points (you have '+st.ep+'). Like or disagree +2, distribute +5, invite a friend +30.'; btns.push(['invite','Invite a friend (+30)']); btns.push(['retake','Retake the questionnaire']) }
+  else if(st.level===3){ t='Next: N4. Apply to the editors; they look at your profile and your comments.'+(st.applied?' Your application was sent (demo).':''); if(!st.applied)btns.push(['apply','Apply for N4']) }
+  else if(st.level===4){ t='You are at the top level that can be earned. N5 is by invitation only.' }
+  else { t='You are in the newsroom.' }
+  box.appendChild(el('p',null,t));
+  if(st.level===2){var bar=el('div','prog');var i=el('i');i.style.width=Math.min(100,Math.round(st.ep/EP_NEED*100))+'%';bar.appendChild(i);box.appendChild(bar)}
+  btns.forEach(function(b,k){var x=el('button',k?'btn ghost':'btn',b[1]);x.setAttribute('data-do',b[0]);x.style.marginRight='8px';box.appendChild(x)});
+}
+function renderLadder(){
+  var rows=[[1,'Agree or disagree with posts.','Score 0-1 on the questionnaire.'],[2,'Also distribute posts.','Score 2-3.'],[3,'Also comment and co-author with a journalist.','Score 4-5 and make the commitment, or earn '+EP_NEED+' points as N2.'],[4,'Also write for the page (editors review every piece).','Score 6-7 and make the commitment.'],[5,'The six AI journalists and the two editors.','By invitation only.']];
+  var d=$('#lad'); d.textContent='';
+  rows.forEach(function(r){
+    var row=el('div','rw'+(st.level===r[0]?' cur':''));
+    row.appendChild(el('span','lv',label(r[0])+(st.level===r[0]?'  (you)':'')));
+    var c=el('span'); c.appendChild(document.createTextNode(r[1])); c.appendChild(el('br')); c.appendChild(el('span','disc','How: '+r[2])); row.appendChild(c);
+    d.appendChild(row);
+  });
+}
+
+/* menu + status */
+function renderMenu(){
+  var m=$('#menu'); m.textContent='';
+  TILES.forEach(function(t){
+    var ok=st.level>=t[2];
+    var b=el('button','tile'+(ok?'':' locked')+(t[0]==='levels'?' levels':''));
+    b.type='button'; b.setAttribute('data-open',t[0]);
+    b.appendChild(el('span',null,t[1]));
+    b.appendChild(el('small',null,t[2]===0?'Open to everyone':(ok?'Unlocked':'Needs '+label(t[2]))));
+    if(!ok){var s=el('span');s.innerHTML=LOCK;b.appendChild(s.firstChild)}
+    m.appendChild(b);
+  });
+}
+function hint(){
+  if(st.level===1)return 'Next: N2 needs 2 points';
+  if(st.level===2)return 'Next: N3 · '+st.ep+' of '+EP_NEED+' points'+(st.committed?'':' + the commitment');
+  if(st.level===3)return 'Next: apply for N4';
+  if(st.level===4)return 'Top level you can earn';
+  return 'Newsroom';
+}
 function refresh(){
   var me=$('#me');me.textContent='';
   var left=el('span');
   if(st.level===0){
     left.appendChild(el('b',null,'No Kodes-ID yet. '));
-    left.appendChild(document.createTextNode('You can read. To take part, get your level in about 2 minutes.'));
+    left.appendChild(document.createTextNode('Pick any action below to take part.'));
     me.appendChild(left);
     var b=el('button','btn cta','Get my Kodes-ID');b.setAttribute('data-do','open-q');me.appendChild(b);
   } else {
     left.appendChild(el('b',null,(st.name||'You')+' '));
     left.appendChild(el('span','pill',label(st.level)));
     left.appendChild(document.createTextNode(' '));
-    left.appendChild(el('span','idc',st.id+' · valid until '+st.until));
+    left.appendChild(el('span','idc',hint()));
     me.appendChild(left);
   }
-  $$('.act').forEach(function(c){
-    var ok=st.level>=NEED[c.getAttribute('data-act')];
-    c.classList.toggle('locked',!ok);
-    $('.state',c).textContent=ok?'Unlocked':'Locked';
-    $('.gate',c).textContent='';
-  });
+  renderMenu();
   $('#demo-level').value=String(st.level);
-  renderPath();
-}
-function renderPath(){
-  var p=$('#path'); p.textContent='';
-  if(st.level===0||st.level>=5){p.hidden=true;return}
-  p.hidden=false;
-  p.appendChild(el('div','idc','Your path'));
-  var t,btns=[];
-  if(st.level===1){ t='Next: N2 · Distributor needs 2 questionnaire points. Retake the questionnaire and add a thoughtful answer in question 5 or tell us more about your cycling.'; btns.push(['retake','Retake the questionnaire']) }
-  else if(st.level===2){ t='Next: N3 · Commentator. Two things are needed: make the commitment in question 6 of the questionnaire, and earn '+EP_NEED+' engagement points. You have '+st.ep+' of '+EP_NEED+' and the commitment is '+(st.committed?'made.':'not made yet.')+' Points: like or disagree +2, distribute +5, invite a friend +30.'; btns.push(['invite','Invite a friend (+30)']); btns.push(['retake','Retake the questionnaire']) }
-  else if(st.level===3){ t='Next: N4 · Author. Apply to the editors: they look at your profile (in the live version a licence, Strava or published work) and your comments so far.'+(st.applied?' Your application was sent (demo).':''); if(!st.applied) btns.push(['apply','Apply for N4']) }
-  else { t='You are at the top level that can be earned. N5 · Newsroom is by invitation only.' }
-  p.appendChild(el('p',null,t));
-  if(st.level===2||st.level===3){ var bar=el('div','prog');var i=el('i');i.style.width=Math.min(100,Math.round(st.ep/EP_NEED*100))+'%';bar.appendChild(i);if(st.level===2)p.appendChild(bar) }
-  btns.forEach(function(b){var x=el('button','btn ghost',b[1]);x.setAttribute('data-do',b[0]);x.style.marginRight='8px';p.appendChild(x)});
+  if(current==='levels')renderLadder();
 }
 function addEp(n,why){
   if(st.level<2)return; st.ep+=n;
   if(st.level===2&&st.ep>=EP_NEED&&st.committed){ setLevel(3,st.name); toast('You reached N3 · Commentator (demo)'); return }
-  if(st.level===2&&st.ep>=EP_NEED&&!st.committed) toast('You have the points for N3. Make the commitment in the questionnaire to unlock it.');
+  if(st.level===2&&st.ep>=EP_NEED&&!st.committed) toast('You have the points for N3. Make the commitment to unlock it.');
   else toast('+'+n+' points ('+why+')');
-  renderPath();
+  refresh();
 }
-function deny(card){
+function allowed(card){
   var need=NEED[card.getAttribute('data-act')];
-  $('.gate',card).textContent = st.level===0
-    ? 'You need a Kodes-ID first. This action requires '+label(need)+' or above. Use "Get my Kodes-ID" to find your level.'
-    : 'Your level is '+label(st.level)+'. This action requires '+label(need)+' or above.';
+  if(st.level>=need){$('.gate',card).textContent='';return true}
+  $('.gate',card).textContent='This needs '+label(need)+'. You are '+(st.level?label(st.level):'without a Kodes-ID')+'.'; return false;
 }
-function allowed(card){ if(st.level>=NEED[card.getAttribute('data-act')]){$('.gate',card).textContent='';return true} deny(card);return false }
 function until(){var d=new Date();d.setMonth(d.getMonth()+24);return d.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}
 function newId(){return 'KID-2026-'+String(Math.floor(Math.random()*9000000)+1000000)}
 function setLevel(l,name){
@@ -493,30 +565,28 @@ function setLevel(l,name){
   else { st.name=name||st.name||'Demo member'; st.id=st.id||newId(); st.until=st.until||until(); }
   refresh();
 }
-/* questionnaire */
+
+/* questionnaire: 3 steps + result */
 function showStep(n){
   qStep=n;
   $$('.qs').forEach(function(s){s.hidden=(s.getAttribute('data-step')!==String(n))});
-  $('#q-lbl').textContent = n<=6?('Question '+n+' of 6'):'Your result';
-  $('#q-bar').style.width=(Math.min(n-1,6)/6*100)+'%';
+  var l=$('#q-lbl'); l.textContent='';
+  if(n<=QSTEPS){ l.appendChild(el('b',null,'Step '+n)); l.appendChild(document.createTextNode(' of '+QSTEPS)) } else l.appendChild(el('b',null,'Done'));
+  $('#q-bar').style.width=(n>QSTEPS?100:(n-1)/QSTEPS*100)+'%';
   $('#q-err').textContent='';
-  $('#q-nav').style.display = n===7?'none':'flex';
+  $('#q-nav').style.display = n>QSTEPS?'none':'flex';
   $('[data-do=q-back]').style.visibility = n===1?'hidden':'visible';
-  $('[data-do=q-next]').textContent = n===6?'See my level':'Continue';
+  $('[data-do=q-next]').textContent = n===QSTEPS?'See my level':'Continue';
 }
-function openQ(){ $('#ov').classList.add('on'); showStep(1); var i=$('#q-name'); if(i)i.focus() }
-function closeQ(){ $('#ov').classList.remove('on') }
+function openQ(){ show('q'); showStep(1); var i=$('#q-name'); if(i)i.focus() }
 function valid(n){
   if(n===1&&!$('#q-name').value.trim()) return 'Please enter your name.';
-  if(n===2&&!$$('input[name=q-int]:checked').length) return 'Choose at least one desk.';
-  if(n===3&&!$('input[name=q-rel]:checked')) return 'Choose one option.';
-  if(n===4&&!$('input[name=q-pub]:checked')) return 'Choose one option.';
+  if(n===2&&(!$('input[name=q-rel]:checked')||!$('input[name=q-pub]:checked'))) return 'Please choose one option in each group.';
   return '';
 }
 function score(){
   var rel=+$('input[name=q-rel]:checked').value, pub=+$('input[name=q-pub]:checked').value;
-  var words=$('#q-why').value.trim().split(/\s+/).filter(Boolean).length;
-  var pts=rel+pub+(words>=15?1:0);
+  var pts=rel+pub+(words($('#q-why').value)>=15?1:0);
   var lvl = pts>=6?4 : pts>=4?3 : pts>=2?2 : 1;
   var capped=false;
   if(!$('#q-decl').checked && lvl>2){lvl=2;capped=true}
@@ -528,24 +598,24 @@ function finishQ(){
   setLevel(r.lvl,$('#q-name').value.trim());
   if(st.committed&&r.lvl===2&&st.ep>=EP_NEED){setLevel(3,st.name)}
   var box=$('#q-res');box.textContent='';
+  box.appendChild(el('h5',null,'Welcome, '+st.name));
   var res=el('div','res');
-  res.appendChild(el('div','idc','Your level'));
-  res.appendChild(el('div','big',label(r.lvl)));
-  res.appendChild(el('div','idc',st.id+' · valid until '+st.until+' · cycling'));
-  box.appendChild(el('h4',null,'Welcome, '+st.name));
+  res.appendChild(el('div','big',label(st.level)));
+  res.appendChild(el('div','idc',st.id+' · valid until '+st.until));
   box.appendChild(res);
-  var why = r.lvl===1?'You can like or disagree with posts.':r.lvl===2?'You can like, disagree and distribute posts.':r.lvl===3?'You can also comment on posts.':'You can also send posts to the editors for the page. Editors review every piece before it appears.';
-  box.appendChild(el('p',null,why));
-  var nxt = r.lvl>=4 ? 'You are at the top of what points can earn. N5 is by invitation only.' : r.lvl===1 ? 'Next step: N2 starts at 2 points. You have '+r.pts+'.' : r.lvl===2 ? 'Next step: N3 starts at 4 points and needs the commitment in question 6. You have '+r.pts+'.' : 'Next step: N4 starts at 6 points. You have '+r.pts+'. N5 is by invitation only.';
-  box.appendChild(el('p','disc','Your score: '+r.pts+' of 7. '+nxt+' See "how to move up" at the bottom of the page.'));
-  if(r.capped) box.appendChild(el('p','disc','Your answers would qualify for a higher level, but without the commitment in question 6 your level stops at N2. You can take the questionnaire again.'));
-  box.appendChild(el('p','disc','Demo mode: this level is calculated in your browser and is not saved. In the live version, N3 and above would also verify your profile (for example a club or federation licence, or published work), and levels expire after 24 months with a re-check. N5 is the newsroom, by invitation only.'));
-  var c=el('button','btn','Start taking part');c.setAttribute('data-do','close-q');box.appendChild(c);
-  showStep(7);
+  var why = st.level===1?'You can like or disagree with posts.':st.level===2?'You can like, disagree and distribute posts.':st.level===3?'You can also comment and co-author with a journalist.':'You can also send posts to the editors.';
+  box.appendChild(el('p',null,why+' Score: '+r.pts+' of 7.'));
+  var nb=el('div','nextbox'); nextInto(nb); box.appendChild(nb);
+  if(r.capped) box.appendChild(el('p','disc','Your answers would qualify for a higher level, but without the commitment your level stops at N2. You can retake the questionnaire.'));
+  var go=el('button','btn cta',pending?('Continue to: '+TITLES[pending]):'Done'); go.setAttribute('data-do','after-q'); box.appendChild(go);
+  showStep(QSTEPS+1);
 }
-/* actions */
-function words(s){return s.trim().split(/\s+/).filter(Boolean).length}
+
+/* clicks */
 document.addEventListener('click',function(e){
+  if(e.target.id==='ov'){closeW();return}
+  var op=e.target.closest('[data-open]');
+  if(op){ openAction(op.getAttribute('data-open')); return }
   var rx=e.target.closest('[data-rx]');
   if(rx){
     var card=rx.closest('.act'); if(!allowed(card))return;
@@ -559,14 +629,15 @@ document.addEventListener('click',function(e){
   var d=e.target.closest('[data-do]'); if(!d)return;
   var a=d.getAttribute('data-do'), card=d.closest('.act');
   if(a==='open-q'||a==='retake')return openQ();
-  if(a==='invite'){ var u=location.href; if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u); addEp(30,'invite sent (demo)'); return }
-  if(a==='apply'){ st.applied=true; toast('Application sent to the editors (demo)'); renderPath(); return }
-  if(a==='close-q')return closeQ();
+  if(a==='close')return closeW();
+  if(a==='after-q'){ var p=pending; pending=null; if(p) openAction(p); else closeW(); return }
+  if(a==='invite'){ var u=location.href; if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u); addEp(30,'invite sent (demo)'); if(current==='lock')closeW(); return }
+  if(a==='apply'){ st.applied=true; toast('Application sent to the editors (demo)'); refresh(); if(current==='lock')closeW(); return }
   if(a==='q-back')return showStep(Math.max(1,qStep-1));
-  if(a==='q-next'){var m=valid(qStep);if(m){$('#q-err').textContent=m;return} return qStep<6?showStep(qStep+1):finishQ()}
+  if(a==='q-next'){var m=valid(qStep);if(m){$('#q-err').textContent=m;return} return qStep<QSTEPS?showStep(qStep+1):finishQ()}
   if(a==='copy'){ if(!allowed(card))return; var url=location.href;
     if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){toast('Link copied')},function(){toast('Copy this link: '+url)})} else toast('Copy this link: '+url); addEp(5,'distributed'); return }
-  if(a==='mail'){ if(!allowed(card))return; location.href='mailto:?subject='+encodeURIComponent('The Daily Peterloton')+'&body='+encodeURIComponent('Today\'s cycling edition: '+location.href); addEp(5,'distributed'); return }
+  if(a==='mail'){ if(!allowed(card))return; addEp(5,'distributed'); location.href='mailto:?subject='+encodeURIComponent('The Daily Peterloton')+'&body='+encodeURIComponent('Today\'s cycling edition: '+location.href); return }
   if(a==='comment'){ if(!allowed(card))return; var t=$('#cm-text').value.trim(); if(!t){$('.gate',card).textContent='Write a comment first.';return}
     var item=el('div','cm'); var b=el('b',null,st.name+' '); item.appendChild(b); item.appendChild(el('span','pill',label(st.level)));
     item.appendChild(el('div',null,'On: '+$('#cm-post').selectedOptions[0].textContent)); item.appendChild(el('div',null,t));
@@ -580,7 +651,7 @@ document.addEventListener('click',function(e){
     it.appendChild(el('div',null,'Asked '+jr.getAttribute('data-label')+' to co-author:'));
     it.appendChild(el('div',null,idea));
     var lk=$('#co-link').value.trim(); if(lk) it.appendChild(el('div','idc','Source: '+lk));
-    it.appendChild(el('div','idc','Status: sent to the editors (demo). Next: editors review, the journalist drafts with you, you approve, then it is published with both names.'));
+    it.appendChild(el('div','idc','Status: sent to the editors (demo).'));
     $('#co-list').insertBefore(it,$('#co-list').firstChild);
     $('#co-idea').value='';$('#co-link').value='';$('#co-ok').checked=false;jr.checked=false;$('#co-wc').textContent='0 / 130 words';g.textContent='';
     toast('Co-author request sent to the editors (demo)'); return }
@@ -589,10 +660,16 @@ document.addEventListener('click',function(e){
     if(words(tx)>130){$('.gate',card).textContent='Please keep it to 130 words.';return}
     $('#wr-head').value='';$('#wr-text').value='';$('#wr-wc').textContent='0 / 130 words'; toast('Sent to the editors for review (demo)'); return }
 });
-document.addEventListener('input',function(e){ if(e.target.id==='wr-text'){var n=words(e.target.value);$('#wr-wc').textContent=n+' / 130 words'} if(e.target.id==='co-idea'){$('#co-wc').textContent=words(e.target.value)+' / 130 words'} });
-document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeQ() });
+document.addEventListener('input',function(e){
+  if(e.target.id==='wr-text'){$('#wr-wc').textContent=words(e.target.value)+' / 130 words'}
+  if(e.target.id==='co-idea'){$('#co-wc').textContent=words(e.target.value)+' / 130 words'}
+  if(e.target.id==='q-why'){var n=words(e.target.value);$('#q-wc').textContent=n>=15?(n+' words: +1 point'):(n+' / 15 words for +1 point')}
+});
+document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeW() });
 $('#demo-level').addEventListener('change',function(e){ var l=+e.target.value; st.id='';st.until=''; setLevel(l,l?'Demo member':'') });
+if(/[?&]demo=1/.test(location.search))$('#demo').hidden=false;
 refresh();
 })();
 </script>
+
 </body></html>

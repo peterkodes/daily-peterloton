@@ -63,6 +63,8 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);font:13
 .res{border:1px solid var(--line);border-radius:10px;padding:16px;margin:12px 0}
 .res .big{font:700 26px -apple-system,Helvetica,sans-serif;color:var(--ink)}
 .ednote{border-left:4px solid var(--accent);background:var(--card);border-radius:0 10px 10px 0;padding:4px 20px 16px;margin-top:24px}.ednote h2{margin-top:16px}.ednote p{margin:0 0 8px;font-style:italic}.ed-title{margin:4px 0 10px;font-size:20px;line-height:1.25;font-style:normal}.ed-by{font:13px -apple-system,Helvetica,sans-serif;color:var(--mute)}figure.ph{margin:12px 0 16px}figure.ph img{display:block;width:100%;height:auto;border-radius:8px}figure.ph figcaption{font:12px/1.4 -apple-system,Helvetica,sans-serif;color:var(--mute);margin-top:6px}.demo[hidden]{display:none}
+.lnk{background:none;border:0;padding:0;color:var(--ink);text-decoration:underline;cursor:pointer;font:inherit;text-underline-offset:3px}
+.lnk:hover{color:var(--accent)}
 .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0}
 @media(max-width:560px){.menu{grid-template-columns:repeat(2,1fr)}}
 .tile{position:relative;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 34px 12px 14px;cursor:pointer;color:var(--ink);font:600 15px/1.3 -apple-system,Helvetica,sans-serif;min-height:82px;display:flex;flex-direction:column;justify-content:space-between;gap:8px}
@@ -404,8 +406,12 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
 <div id="lad"></div>
 <p class="disc"><b>Points (max 7):</b> relationship to cycling 0-3, publishing history 0-3, a thoughtful answer +1. Retake the questionnaire any time.</p>
 <details><summary>More on how this works</summary>
-<p class="disc">Levels apply to cycling only. In this demo your level is calculated in your browser and is not saved. In the live version, N3 and above would also verify your profile (a club or federation licence, Strava, or published work), and levels expire after 24 months with a re-check.</p></details>
+<p class="disc">Levels apply to cycling only. This is a test: your level, answers and clicks are saved in your browser and in a private sheet that only the editors read. In the live version, N3 and above would also verify your profile (a club or federation licence, Strava, or published work), and levels expire after 24 months with a re-check.</p></details>
 <div class="row" style="margin-top:12px"><button class="btn cta" data-do="open-q">Get or retake my Kodes-ID</button></div></div>
+
+<div class="pn" data-panel="restore" hidden><p class="disc">Type the code you received when you created your Kodes-ID.</p>
+<input type="text" id="rs-code" placeholder="KODES-XXXXX" autocapitalize="characters" autocomplete="off" spellcheck="false">
+<div class="err" id="rs-err"></div><button class="btn" data-do="restore">Find my Kodes-ID</button></div>
 
 <div class="pn" data-panel="lock" hidden><div id="lock-body"></div></div>
 
@@ -414,7 +420,8 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
 <div class="qs" data-step="1"><h5>Who are you?</h5><p class="disc">Your name appears on comments and bylines.</p>
 <input type="text" id="q-name" maxlength="60" autocomplete="name" placeholder="Your name">
 <p class="disc">Desks you follow (optional)</p>
-<div class="chips"><label><input type="checkbox" name="q-int" value="Road">Road</label><label><input type="checkbox" name="q-int" value="Mountain bike">Mountain bike</label><label><input type="checkbox" name="q-int" value="Gravel">Gravel</label><label><input type="checkbox" name="q-int" value="Women's">Women's</label><label><input type="checkbox" name="q-int" value="AliExpress kit">AliExpress kit</label><label><input type="checkbox" name="q-int" value="Urban">Urban</label></div></div>
+<div class="chips"><label><input type="checkbox" name="q-int" value="Road">Road</label><label><input type="checkbox" name="q-int" value="Mountain bike">Mountain bike</label><label><input type="checkbox" name="q-int" value="Gravel">Gravel</label><label><input type="checkbox" name="q-int" value="Women's">Women's</label><label><input type="checkbox" name="q-int" value="AliExpress kit">AliExpress kit</label><label><input type="checkbox" name="q-int" value="Urban">Urban</label></div>
+<p class="disc">This is a test: your name, answers and clicks are saved so we can improve it.</p></div>
 <div class="qs q2" data-step="2" hidden><h5>You and cycling</h5>
 <div class="grp">Your relationship to cycling</div>
 <label class="opt"><input type="radio" name="q-rel" value="0">I follow cycling as a fan</label>
@@ -447,10 +454,19 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
 var NAMES={1:'Fan',2:'Distributor',3:'Commentator',4:'Author',5:'Newsroom'};
 var NEED={rx:1,share:2,comment:3,coauthor:3,write:4,levels:0};
 var TILES=[['rx','Agree / disagree',1],['share','Distribute',2],['comment','Comment',3],['coauthor','Co-author with a journalist',3],['write','Write for the page',4],['levels','Understand levels',0]];
-var TITLES={rx:'Agree or disagree',share:'Distribute',comment:'Comment',coauthor:'Co-author with a journalist',write:'Write for the page',levels:'Understand levels',q:'Get your Kodes-ID',lock:'Not unlocked yet'};
+var TITLES={rx:'Agree or disagree',share:'Distribute',comment:'Comment',coauthor:'Co-author with a journalist',write:'Write for the page',levels:'Understand levels',q:'Get your Kodes-ID',lock:'Not unlocked yet',restore:'Find my Kodes-ID'};
 var LOCK='<svg class="lk" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
 var st={level:0,name:'',id:'',until:'',ep:0,committed:false,applied:false};
 var EP_NEED=30, QSTEPS=3;
+var SYNC_URL='https://script.google.com/macros/s/AKfycbwduXb40wozn-HVR5x1Ud5P0oDnzIXZjRiB54NbdT2wB4x86MzQx3UFTLVCgad0KHopOg/exec';
+var DEMO=/[?&]demo=1/.test(location.search);
+var KEY='kodes_v1', DKEY='kodes_dv';
+var dev=(function(){try{var d=localStorage.getItem(DKEY);if(!d){d='d'+Math.random().toString(36).slice(2,10);localStorage.setItem(DKEY,d)}return d}catch(e){return 'd-'+Math.random().toString(36).slice(2,8)}})();
+var ans={rel:'',pub:'',why:0,desks:''};
+function persist(){ if(DEMO)return; try{localStorage.setItem(KEY,JSON.stringify({st:st,ans:ans}))}catch(e){} }
+function post(o){ if(DEMO||!SYNC_URL)return; try{ fetch(SYNC_URL,{method:'POST',mode:'no-cors',keepalive:true,headers:{'Content-Type':'text/plain'},body:JSON.stringify(o)}) }catch(e){} }
+function sync(){ persist(); if(st.id) post({action:'save',device:dev,person:{id:st.id,name:st.name,level:st.level,ep:st.ep,committed:st.committed,applied:st.applied,until:st.until,rel:ans.rel,pub:ans.pub,why_words:ans.why,desks:ans.desks}}) }
+function track(a,detail){ post({action:'log',device:dev,id:st.id,name:st.name,level:st.level,event:a,detail:detail||''}) }
 var react={},counts={};
 var qStep=1, pending=null, current='';
 function $(s,r){return (r||document).querySelector(s)}
@@ -471,6 +487,7 @@ function show(panel){
 }
 function closeW(){ $('#ov').classList.remove('on'); pending=null; current='' }
 function openAction(a){
+  track('open:'+a, st.level>=NEED[a]?'allowed':'locked');
   if(a==='levels')return show('levels');
   if(st.level>=NEED[a])return show(a);
   if(st.level===0){ pending=a; return openQ() }
@@ -489,7 +506,7 @@ function nextInto(box){
   if(st.level===0){ t='Get your Kodes-ID in 3 short steps.'; btns.push(['open-q','Get my Kodes-ID']) }
   else if(st.level===1){ t='Next: N2 needs 2 points. Retake the questionnaire and add a thoughtful answer.'; btns.push(['retake','Retake the questionnaire']) }
   else if(st.level===2){ t='Next: N3 needs the commitment ('+(st.committed?'made':'not made yet')+') and '+EP_NEED+' points (you have '+st.ep+'). Like or disagree +2, distribute +5, invite a friend +30.'; btns.push(['invite','Invite a friend (+30)']); btns.push(['retake','Retake the questionnaire']) }
-  else if(st.level===3){ t='Next: N4. Apply to the editors; they look at your profile and your comments.'+(st.applied?' Your application was sent (demo).':''); if(!st.applied)btns.push(['apply','Apply for N4']) }
+  else if(st.level===3){ t='Next: N4. Apply to the editors; they look at your profile and your comments.'+(st.applied?' Your application was sent (test).':''); if(!st.applied)btns.push(['apply','Apply for N4']) }
   else if(st.level===4){ t='You are at the top level that can be earned. N5 is by invitation only.' }
   else { t='You are in the newsroom.' }
   box.appendChild(el('p',null,t));
@@ -532,26 +549,40 @@ function refresh(){
   var left=el('span');
   if(st.level===0){
     left.appendChild(el('b',null,'No Kodes-ID yet. '));
-    left.appendChild(document.createTextNode('Pick any action below to take part.'));
+    left.appendChild(document.createTextNode('Pick any action below to take part. '));
+    var rs=el('button','lnk','I already have a code'); rs.setAttribute('data-do','open-restore'); left.appendChild(rs);
     me.appendChild(left);
     var b=el('button','btn cta','Get my Kodes-ID');b.setAttribute('data-do','open-q');me.appendChild(b);
   } else {
     left.appendChild(el('b',null,(st.name||'You')+' '));
     left.appendChild(el('span','pill',label(st.level)));
     left.appendChild(document.createTextNode(' '));
-    left.appendChild(el('span','idc',hint()));
+    left.appendChild(el('span','idc',hint()+' · code '+st.id));
     me.appendChild(left);
+    var out=el('button','lnk idc','Not you?'); out.setAttribute('data-do','logout'); me.appendChild(out);
   }
   renderMenu();
   $('#demo-level').value=String(st.level);
   if(current==='levels')renderLadder();
 }
 function addEp(n,why){
-  if(st.level<2)return; st.ep+=n;
-  if(st.level===2&&st.ep>=EP_NEED&&st.committed){ setLevel(3,st.name); toast('You reached N3 · Commentator (demo)'); return }
+  if(st.level<2)return; st.ep+=n; sync();
+  if(st.level===2&&st.ep>=EP_NEED&&st.committed){ setLevel(3,st.name); toast('You reached N3 · Commentator (test)'); return }
   if(st.level===2&&st.ep>=EP_NEED&&!st.committed) toast('You have the points for N3. Make the commitment to unlock it.');
   else toast('+'+n+' points ('+why+')');
   refresh();
+}
+function restore(code){
+  code=(code||'').toUpperCase().replace(/\s+/g,''); if(code&&code.indexOf('KODES-')!==0)code='KODES-'+code;
+  var err=$('#rs-err'); err.textContent='';
+  if(!SYNC_URL){err.textContent='Restoring on a new device is not switched on yet.';return}
+  if(!/^KODES-[A-Z0-9]{4,6}$/.test(code)){err.textContent='That does not look like a code. Example: KODES-7F3K9';return}
+  err.textContent='Looking...';
+  fetch(SYNC_URL+'?action=load&id='+encodeURIComponent(code)).then(function(r){return r.json()}).then(function(d){
+    if(!d||!d.found){err.textContent='We could not find that code. Check it, or get a new Kodes-ID.';return}
+    var p=d.person; st.id=p.id; st.name=p.name; st.level=+p.level; st.ep=+p.ep||0; st.committed=(p.committed===true||p.committed==='true'||p.committed==='TRUE'); st.applied=(p.applied===true||p.applied==='true'||p.applied==='TRUE'); st.until=p.until||'';
+    refresh(); persist(); track('restore'); closeW(); toast('Welcome back, '+st.name);
+  }).catch(function(){err.textContent='Could not reach the server. Try again in a moment.'});
 }
 function allowed(card){
   var need=NEED[card.getAttribute('data-act')];
@@ -559,16 +590,16 @@ function allowed(card){
   $('.gate',card).textContent='This needs '+label(need)+'. You are '+(st.level?label(st.level):'without a Kodes-ID')+'.'; return false;
 }
 function until(){var d=new Date();d.setMonth(d.getMonth()+24);return d.toLocaleDateString('en-GB',{month:'long',year:'numeric'})}
-function newId(){return 'KID-2026-'+String(Math.floor(Math.random()*9000000)+1000000)}
+function newId(){var A='ABCDEFGHJKMNPQRSTUVWXYZ23456789',s='';for(var i=0;i<5;i++)s+=A.charAt(Math.floor(Math.random()*A.length));return 'KODES-'+s}
 function setLevel(l,name){
   st.level=l; if(l===0){st.name='';st.id='';st.until=''}
   else { st.name=name||st.name||'Demo member'; st.id=st.id||newId(); st.until=st.until||until(); }
-  refresh();
+  refresh(); sync();
 }
 
 /* questionnaire: 3 steps + result */
 function showStep(n){
-  qStep=n;
+  qStep=n; if(n<=QSTEPS)track('q_step_'+n);
   $$('.qs').forEach(function(s){s.hidden=(s.getAttribute('data-step')!==String(n))});
   var l=$('#q-lbl'); l.textContent='';
   if(n<=QSTEPS){ l.appendChild(el('b',null,'Step '+n)); l.appendChild(document.createTextNode(' of '+QSTEPS)) } else l.appendChild(el('b',null,'Done'));
@@ -594,7 +625,9 @@ function score(){
 }
 function finishQ(){
   var r=score();
-  st.id='';st.until='';st.committed=$('#q-decl').checked;
+  st.committed=$('#q-decl').checked;
+  var rl=$('input[name=q-rel]:checked'), pb=$('input[name=q-pub]:checked');
+  ans.rel=rl?rl.parentNode.textContent.trim():''; ans.pub=pb?pb.parentNode.textContent.trim():''; ans.why=words($('#q-why').value); ans.desks=$$('input[name=q-int]:checked').map(function(i){return i.value}).join(', ');
   setLevel(r.lvl,$('#q-name').value.trim());
   if(st.committed&&r.lvl===2&&st.ep>=EP_NEED){setLevel(3,st.name)}
   var box=$('#q-res');box.textContent='';
@@ -603,6 +636,9 @@ function finishQ(){
   res.appendChild(el('div','big',label(st.level)));
   res.appendChild(el('div','idc',st.id+' · valid until '+st.until));
   box.appendChild(res);
+  track('q_done','score '+r.pts+' level '+st.level);
+  var cb=el('div','nextbox'); cb.appendChild(el('p',null,'Your code is '+st.id+'. On this device you are remembered automatically. On another device, type the code in to get your level back.'));
+  var cc=el('button','btn ghost','Copy code'); cc.setAttribute('data-do','copy-code'); var ce=el('button','btn ghost','Email it to me'); ce.setAttribute('data-do','mail-code'); ce.style.marginLeft='8px'; cb.appendChild(cc); cb.appendChild(ce); box.appendChild(cb);
   var why = st.level===1?'You can like or disagree with posts.':st.level===2?'You can like, disagree and distribute posts.':st.level===3?'You can also comment and co-author with a journalist.':'You can also send posts to the editors.';
   box.appendChild(el('p',null,why+' Score: '+r.pts+' of 7.'));
   var nb=el('div','nextbox'); nextInto(nb); box.appendChild(nb);
@@ -622,53 +658,60 @@ document.addEventListener('click',function(e){
     var row=rx.closest('.rx'), desk=row.getAttribute('data-desk'), kind=rx.getAttribute('data-rx');
     counts[desk]=counts[desk]||{like:0,dis:0};
     if(react[desk]) counts[desk][react[desk]]--;
-    if(react[desk]===kind) react[desk]=null; else {react[desk]=kind;counts[desk][kind]++;addEp(2,'reaction')}
+    if(react[desk]===kind) react[desk]=null; else {react[desk]=kind;counts[desk][kind]++;track('react:'+desk,kind);addEp(2,'reaction')}
     $$('[data-rx]',row).forEach(function(b){var k=b.getAttribute('data-rx');b.classList.toggle('on',react[desk]===k);$('i',b).textContent=counts[desk][k]});
     return;
   }
   var d=e.target.closest('[data-do]'); if(!d)return;
   var a=d.getAttribute('data-do'), card=d.closest('.act');
   if(a==='open-q'||a==='retake')return openQ();
+  if(a==='open-restore'){ $('#rs-err').textContent=''; show('restore'); $('#rs-code').focus(); return }
+  if(a==='restore')return restore($('#rs-code').value);
+  if(a==='logout'){ var old=st.id; track('logout'); st={level:0,name:'',id:'',until:'',ep:0,committed:false,applied:false}; ans={rel:'',pub:'',why:0,desks:''}; try{localStorage.removeItem(KEY)}catch(x){} refresh(); toast('Signed out on this device. Your code still works: '+old); return }
+  if(a==='copy-code'){ if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(st.id).then(function(){toast('Code copied')},function(){toast('Your code: '+st.id)})} else toast('Your code: '+st.id); return }
+  if(a==='mail-code'){ location.href='mailto:?subject='+encodeURIComponent('My Kodes-ID for The Daily Peterloton')+'&body='+encodeURIComponent('My code: '+st.id+'\nOpen this link to get back in: '+location.origin+location.pathname+'?id='+st.id); return }
   if(a==='close')return closeW();
   if(a==='after-q'){ var p=pending; pending=null; if(p) openAction(p); else closeW(); return }
-  if(a==='invite'){ var u=location.href; if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u); addEp(30,'invite sent (demo)'); if(current==='lock')closeW(); return }
-  if(a==='apply'){ st.applied=true; toast('Application sent to the editors (demo)'); refresh(); if(current==='lock')closeW(); return }
+  if(a==='invite'){ var u=location.href; if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u); addEp(30,'invite sent (test)'); if(current==='lock')closeW(); return }
+  if(a==='apply'){ st.applied=true; sync(); track('apply'); toast('Application sent to the editors (test)'); refresh(); if(current==='lock')closeW(); return }
   if(a==='q-back')return showStep(Math.max(1,qStep-1));
   if(a==='q-next'){var m=valid(qStep);if(m){$('#q-err').textContent=m;return} return qStep<QSTEPS?showStep(qStep+1):finishQ()}
   if(a==='copy'){ if(!allowed(card))return; var url=location.href;
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){toast('Link copied')},function(){toast('Copy this link: '+url)})} else toast('Copy this link: '+url); addEp(5,'distributed'); return }
-  if(a==='mail'){ if(!allowed(card))return; addEp(5,'distributed'); location.href='mailto:?subject='+encodeURIComponent('The Daily Peterloton')+'&body='+encodeURIComponent('Today\'s cycling edition: '+location.href); return }
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(url).then(function(){toast('Link copied')},function(){toast('Copy this link: '+url)})} else toast('Copy this link: '+url); track('share','copy'); addEp(5,'distributed'); return }
+  if(a==='mail'){ if(!allowed(card))return; track('share','mail'); addEp(5,'distributed'); location.href='mailto:?subject='+encodeURIComponent('The Daily Peterloton')+'&body='+encodeURIComponent('Today\'s cycling edition: '+location.href); return }
   if(a==='comment'){ if(!allowed(card))return; var t=$('#cm-text').value.trim(); if(!t){$('.gate',card).textContent='Write a comment first.';return}
-    var item=el('div','cm'); var b=el('b',null,st.name+' '); item.appendChild(b); item.appendChild(el('span','pill',label(st.level)));
+    track('comment',t+' | on '+$('#cm-post').selectedOptions[0].textContent); var item=el('div','cm'); var b=el('b',null,st.name+' '); item.appendChild(b); item.appendChild(el('span','pill',label(st.level)));
     item.appendChild(el('div',null,'On: '+$('#cm-post').selectedOptions[0].textContent)); item.appendChild(el('div',null,t));
-    $('#cm-list').insertBefore(item,$('#cm-list').firstChild); $('#cm-text').value=''; toast('Comment posted (demo)'); return }
+    $('#cm-list').insertBefore(item,$('#cm-list').firstChild); $('#cm-text').value=''; toast('Comment posted (test)'); return }
   if(a==='coauthor'){ if(!allowed(card))return; var jr=$('input[name=co-j]:checked'); var idea=$('#co-idea').value.trim(); var g=$('.gate',card);
     if(!jr){g.textContent='Choose a journalist.';return}
     if(!idea){g.textContent='Describe your idea first.';return}
     if(words(idea)>130){g.textContent='Please keep it to 130 words.';return}
     if(!$('#co-ok').checked){g.textContent='Please accept the commitment to continue.';return}
-    var it=el('div','cm'); it.appendChild(el('b',null,st.name+' ')); it.appendChild(el('span','pill',label(st.level)));
+    track('coauthor',jr.getAttribute('data-label')+': '+idea); var it=el('div','cm'); it.appendChild(el('b',null,st.name+' ')); it.appendChild(el('span','pill',label(st.level)));
     it.appendChild(el('div',null,'Asked '+jr.getAttribute('data-label')+' to co-author:'));
     it.appendChild(el('div',null,idea));
     var lk=$('#co-link').value.trim(); if(lk) it.appendChild(el('div','idc','Source: '+lk));
-    it.appendChild(el('div','idc','Status: sent to the editors (demo).'));
+    it.appendChild(el('div','idc','Status: sent to the editors (test).'));
     $('#co-list').insertBefore(it,$('#co-list').firstChild);
     $('#co-idea').value='';$('#co-link').value='';$('#co-ok').checked=false;jr.checked=false;$('#co-wc').textContent='0 / 130 words';g.textContent='';
-    toast('Co-author request sent to the editors (demo)'); return }
+    toast('Co-author request sent to the editors (test)'); return }
   if(a==='write'){ if(!allowed(card))return; var h=$('#wr-head').value.trim(), tx=$('#wr-text').value.trim();
     if(!h||!tx){$('.gate',card).textContent='Add a headline and a paragraph.';return}
     if(words(tx)>130){$('.gate',card).textContent='Please keep it to 130 words.';return}
-    $('#wr-head').value='';$('#wr-text').value='';$('#wr-wc').textContent='0 / 130 words'; toast('Sent to the editors for review (demo)'); return }
+    track('write',h+' | '+tx); $('#wr-head').value='';$('#wr-text').value='';$('#wr-wc').textContent='0 / 130 words'; toast('Sent to the editors for review (test)'); return }
 });
 document.addEventListener('input',function(e){
   if(e.target.id==='wr-text'){$('#wr-wc').textContent=words(e.target.value)+' / 130 words'}
   if(e.target.id==='co-idea'){$('#co-wc').textContent=words(e.target.value)+' / 130 words'}
   if(e.target.id==='q-why'){var n=words(e.target.value);$('#q-wc').textContent=n>=15?(n+' words: +1 point'):(n+' / 15 words for +1 point')}
 });
-document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeW() });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeW(); if(e.key==='Enter'&&e.target.id==='rs-code')restore(e.target.value) });
 $('#demo-level').addEventListener('change',function(e){ var l=+e.target.value; st.id='';st.until=''; setLevel(l,l?'Demo member':'') });
-if(/[?&]demo=1/.test(location.search))$('#demo').hidden=false;
-refresh();
+if(DEMO)$('#demo').hidden=false;
+if(!DEMO){ try{ var raw=localStorage.getItem(KEY); if(raw){var o=JSON.parse(raw); if(o&&o.st&&typeof o.st.level==='number'){ st=o.st; ans=o.ans||ans } } }catch(e){} }
+refresh(); track('visit');
+var qm=location.search.match(/[?&]id=([A-Za-z0-9-]+)/); if(qm&&!DEMO&&qm[1].toUpperCase()!==st.id) restore(qm[1]);
 })();
 </script>
 

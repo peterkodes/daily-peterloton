@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Vincular conta Viva Mídia · Kodes-ID</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#171717;background:#f6f6f4}*{box-sizing:border-box}
+body{margin:0}main{max-width:570px;margin:8vh auto;padding:28px}section{background:white;border:1px solid #ddd;border-radius:16px;padding:26px;box-shadow:0 8px 32px #00000008}
+h1{font-size:25px;margin:5px 0 14px}p{line-height:1.55;color:#484848}strong{color:#111}
+button,.button{padding:12px 16px;border-radius:9px;background:#bbfb2d;border:0;color:#111;font-weight:700;font-size:15px;cursor:pointer;display:inline-block;text-decoration:none;margin:8px 6px 0 0}
+.secondary{background:#eee}.status{padding:12px;border-radius:8px;background:#f8f7f2;color:#303030;margin:16px 0}
+button:disabled{opacity:.6;cursor:wait}footer{margin-top:20px;font-size:12px;color:#777}
+</style>
+</head>
+<body><main><section>
+<p style="color:#ad4a05;font-size:12px;font-weight:800;letter-spacing:.13em">VIVA MÍDIA × KODES-ID</p>
+<h1>Autorizar vínculo de contas</h1>
+<p>Você continuará usando sua conta Viva Mídia. A associação permite que seu Kodes-ID reconheça sua participação, sem apagar comentários ou conceder permissões administrativas.</p>
+<p id="account"></p>
+<div id="status" role="status" class="status">Conferindo sua sessão no site...</div>
+<button id="authorize" type="button" disabled>Autorizar associação ao Kodes-ID</button>
+<button id="retry" type="button" class="secondary">Já entrei, conferir novamente</button>
+<a class="button secondary" href="/account" target="_blank" rel="noopener noreferrer">Entrar na Viva Mídia</a>
+<footer>Esta janela envia a prova da sessão somente ao endereço oficial https://app.kodes.com.br, mediante sua autorização. Nenhuma senha é compartilhada.</footer>
+</section></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2" crossorigin="anonymous"></script>
+<script>
+'use strict';
+(() => {
+ const KODES_ORIGIN='https://app.kodes.com.br';
+ const params=new URLSearchParams(location.search);
+ const state=params.get('state')||'';
+ const status=document.getElementById('status');
+ const button=document.getElementById('authorize');
+ const refresh=document.getElementById('retry');
+ const account=document.getElementById('account');
+ let sessionToken=null;
+ if(!/^[0-9a-f]{48}$/.test(state)||!window.opener||window.opener.closed){
+   status.textContent='Esta janela deve ser aberta pela sua conta Kodes-ID. Volte ao Kodes e inicie o vínculo.';
+   button.hidden=true;refresh.hidden=true;return;
+ }
+ if(!window.supabase?.createClient){status.textContent='Não foi possível carregar a autenticação da Viva Mídia.';return;}
+ const viva=window.supabase.createClient('https://jyjrgdoeuzlvvpkymqsu.supabase.co','sb_publishable_suBMv7WnrejReyIswL19jw_ipsMz5Gr',{auth:{persistSession:true,autoRefreshToken:true}});
+ async function check(){
+   button.disabled=true;sessionToken=null;status.textContent='Validando sua conta Viva Mídia...';
+   try{
+     const {data:{session}}=await viva.auth.getSession();
+     if(!session){status.textContent='Você ainda não está logado na Viva Mídia. Abra “Entrar na Viva Mídia”, faça seu login e clique em “Já entrei”.';return;}
+     const {data,error}=await viva.auth.getUser(session.access_token);
+     if(error||!data?.user){status.textContent='Sua sessão expirou. Entre novamente no portal.';return;}
+     sessionToken=session.access_token;
+     account.textContent='Conta Viva Mídia autenticada: '+(data.user.email||'Leitor');
+     button.disabled=false;status.textContent='Conta confirmada. Clique em Autorizar para concluir no Kodes-ID.';
+   }catch{status.textContent='Falha ao validar sessão. Tente novamente.';}
+ }
+ button.addEventListener('click',()=>{
+   if(!sessionToken||!window.opener||window.opener.closed)return;
+   window.opener.postMessage({type:'kodes:viva:identity',state,access_token:sessionToken},KODES_ORIGIN);
+   sessionToken=null;button.disabled=true;
+   status.textContent='Autorização enviada ao Kodes-ID. Volte à janela do Kodes para confirmar.';
+ });
+ refresh.addEventListener('click',check);
+ check();
+})();
+</script></body></html>

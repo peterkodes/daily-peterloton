@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><title>Reader account | The Bike Diaries</title>
+<style>
+:root{color-scheme:light dark;--ink:#111;--body:#555;--line:#ddd;--bg:#f5f5f5;--card:#fff;--accent:#ff6204} @media(prefers-color-scheme:dark){:root{--ink:#f5f5f5;--body:#ccc;--line:#444;--bg:#111;--card:#262626}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--body);font:16px/1.5 system-ui,sans-serif}main{max-width:560px;margin:0 auto;padding:32px 18px 64px}header{border-bottom:2px solid var(--ink);padding:0 0 24px;margin-bottom:24px}h1,h2{color:var(--ink);line-height:1.2}h1{font-size:32px;letter-spacing:-.5px;margin:20px 0 8px}h1 span{color:var(--accent)}h2{font-size:22px;margin:0 0 12px}a{color:var(--ink);text-underline-offset:3px}.card{background:var(--card);border:1px solid var(--line);padding:24px;border-radius:10px;margin:16px 0}label{display:block;font-weight:600;color:var(--ink);margin-top:14px}input{display:block;width:100%;padding:12px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit;margin-top:5px}button{font:600 15px system-ui,sans-serif;border:1px solid var(--line);border-radius:7px;padding:12px 14px;cursor:pointer;color:var(--ink);background:var(--card);margin:10px 6px 0 0}button.primary{background:#bd4600;color:white;border-color:#bd4600}button:disabled{opacity:.55;cursor:wait}small{display:block;margin-top:8px}#status{padding:12px;border-left:3px solid var(--accent);background:var(--card);overflow-wrap:anywhere} [hidden]{display:none!important} :focus-visible{outline:2px solid var(--accent);outline-offset:3px}footer{font-size:13px;color:var(--body);margin-top:32px} .actions{display:flex;flex-wrap:wrap}
+</style>
+</head><body><main>
+<header><a href="/">← Back to articles</a><h1>The Bike <span>Diaries</span></h1><p>Your independent reader account.</p></header>
+<p id="status" role="status" aria-live="polite">Connecting to the reader service…</p>
+<section id="guest" class="card" hidden>
+<h2 id="form-title">Sign in</h2><div class="actions"><button type="button" id="choose-login">Sign in</button><button type="button" id="choose-register">Create account</button><button type="button" id="choose-reset">Forgot password</button></div>
+<form id="auth-form">
+<label id="name-label" hidden>Public display name<input id="name" autocomplete="nickname" maxlength="80" minlength="2" disabled></label>
+<label>Email<input id="email" type="email" autocomplete="email" required maxlength="254"></label>
+<label id="password-label">Password<input id="password" type="password" autocomplete="current-password" required></label>
+<small id="signup-note" hidden>Only your display name is public. Your email is used for authentication. Use a test account during this pilot.</small>
+<button class="primary" id="submit" type="submit">Sign in</button>
+</form></section>
+<section id="member" class="card" hidden><h2>My reader account</h2><p id="member-email"></p><form id="profile-form"><label>Public display name<input id="profile-name" required minlength="2" maxlength="80" autocomplete="nickname"></label><button type="submit" class="primary">Save profile</button></form><button id="logout" type="button">Sign out</button><p><a href="/">Browse articles</a></p></section>
+<section id="recovery" class="card" hidden><h2>Set a new password</h2><form id="recovery-form"><label>New password<input id="new-password" type="password" autocomplete="new-password" minlength="10" required></label><button class="primary" type="submit">Update password</button></form><button type="button" id="cancel-recovery">Sign out</button></section>
+<footer>Viva Mídia · The Bike Diaries · Pilot environment</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2"></script>
+<script src="/reader-auth.js" defer></script>
+</body></html>

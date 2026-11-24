@@ -1,0 +1,43 @@
+name: Viva Media pilot CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feat/kodes-pilot-server-integration-20261124]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate client JavaScript syntax
+        run: |
+          node --check reader-comments.js
+          node --check admin.js
+      - name: Validate public pilot contract
+        run: |
+          node --input-type=module <<'EOF'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const read=p=>fs.readFileSync(p,'utf8');
+          const reader=read('reader-comments.js');
+          const bridge=read('kodes-link.html');
+          const grant=read('supabase/functions/kodes-comment-grant/index.ts');
+          const app=read('docs/KODES_ID_COMENTARIOS_N2.md');
+          assert.match(reader,/autorizar-comentario-viva/);
+          assert.match(reader,/kodes-comment-grant/);
+          assert.match(reader,/postMessage/);
+          assert.match(reader,/pending/);
+          assert.match(bridge,/kodes:viva:identity/);
+          assert.match(bridge,/KODES_ORIGIN/);
+          assert.match(grant,/kodes-viva-comment-access/);
+          assert.match(grant,/level/);
+          assert.match(app,/RESTRICTIVE/);
+          assert.ok(fs.existsSync('supabase/migrations/20261124212000_enforce_kodes_comment_n2_after_deploy.sql'));
+          console.log('Pilot contract and deferred N2 enforcement present.');
+          EOF

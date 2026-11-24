@@ -112,7 +112,7 @@
     else if (authError) p.hint.append('Unable to verify your account. ',accountLink('Open your account'));
     else if (!p.article) p.hint.textContent='Comments are currently unavailable for this article.';
     else if (!p.article.comments_enabled) p.hint.textContent='Comments are closed for this article.';
-    else if (!user) p.hint.append(accountLink('Sign in or create a reader account'),' to join the discussion.');
+    else if (!user) p.hint.append('Leitura livre. Para comentar, ',accountLink('entre na sua conta Viva Mídia'),' e confirme seu Kodes-ID N2.');
     else if (!profile) p.hint.append(accountLink('Complete your reader profile'),' before commenting.');
     else if(!grantValid())p.hint.textContent='Para comentar ou responder, vincule seu Kodes-ID e confirme o nível N2. Seus comentários anteriores permanecem visíveis.';
     else p.hint.textContent='Kodes-ID N2 confirmado. Comentando como '+profile.display_name+'. Comentários passam por moderação.';

@@ -31,7 +31,7 @@ jobs:
           const app=read('docs/KODES_ID_COMENTARIOS_N2.md');
           assert.match(reader,/autorizar-comentario-viva/);
           assert.match(reader,/kodes-comment-grant/);
-          assert.match(reader,/addEventListener\\('message'/);
+          assert.ok(reader.includes("addEventListener('message'"));
           assert.match(reader,/pending/);
           assert.match(bridge,/kodes:viva:identity/);
           assert.match(bridge,/KODES_ORIGIN/);

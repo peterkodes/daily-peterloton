@@ -131,7 +131,7 @@
       if (c.status !== 'approved') card.append(node('small',c.status === 'pending' ? 'Awaiting moderation — visible only to you and administrators' : 'Not published ('+c.status+')','reader-comment-meta'));
       card.append(node('p',c.content,'reader-comment-content'));
       if (user && profile && p.article.comments_enabled && c.status==='approved' && !authError) {
-        const b=node('button','Reply'); b.type='button'; b.onclick=()=>{p.parent=c.id;p.replyInfo.hidden=false;p.replyText.textContent='Replying to '+name;p.input.focus();}; card.append(b);
+        const b=node('button','Reply'); b.type='button'; b.onclick=()=>{if(!grantValid()){authorizeKodes();return;}p.parent=c.id;p.replyInfo.hidden=false;p.replyText.textContent='Replying to '+name;p.input.focus();}; card.append(b);
       }
       p.list.append(card);
     }

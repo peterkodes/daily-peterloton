@@ -8,7 +8,41 @@
   const initialError = new URLSearchParams(location.hash.slice(1)).get('error') || new URLSearchParams(location.search).get('error');
   const client = window.supabase.createClient('https://jyjrgdoeuzlvvpkymqsu.supabase.co', 'sb_publishable_suBMv7WnrejReyIswL19jw_ipsMz5Gr');
   let mode = 'login', currentUser = null, busy = false, revision = 0;
-  function show(panel) { ['guest','member','recovery'].forEach(id => { $(id).hidden = id !== panel; }); }
+  const activity = document.createElement('section');activity.className='card';activity.hidden=true;
+  const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
+  const activityTitle=el('h2','My Activity');const metrics=el('p');const admin=el('a','Administration Center');admin.href='/admin';admin.hidden=true;
+  const refresh=el('button','Refresh activity');refresh.type='button';
+  const feedback=el('p');feedback.setAttribute('role','status');
+  const commentsList=el('div');const likesList=el('div');
+  activity.append(activityTitle,admin,metrics,refresh,feedback,el('h2','My comments & replies'),commentsList,el('h2','My Likes'),likesList);$('member').after(activity);
+  let activityRequest=0;
+  function articleLink(article){const link=el('a',article?.title||'Article unavailable');if(article?.slug&&/^[a-z0-9-]+$/.test(article.slug))link.href='/#article-'+article.slug;return link;}
+  function clearActivity(){activityRequest++;activity.hidden=true;admin.hidden=true;metrics.textContent='';feedback.textContent='';commentsList.replaceChildren();likesList.replaceChildren();}
+  function show(panel) { ['guest','member','recovery'].forEach(id => { $(id).hidden = id !== panel; }); if(panel!=='member')clearActivity(); }
+  async function loadActivity(user,v){
+    const req=++activityRequest,uid=user.id;
+    const valid=()=>req===activityRequest&&v===revision&&currentUser?.id===uid&&!recovering;
+    activity.hidden=false;admin.hidden=true;metrics.textContent='';commentsList.replaceChildren();likesList.replaceChildren();feedback.textContent='Loading your activity…';refresh.disabled=true;
+    try {
+      const [role,comments,likes]=await Promise.all([
+        client.from('user_roles').select('role').eq('user_id',uid).maybeSingle(),
+        client.from('comments').select('id,content,status,created_at,parent_id,articles(title,slug)',{count:'exact'}).eq('user_id',uid).order('created_at',{ascending:false}).limit(100),
+        client.from('reactions').select('article_id,created_at,articles(title,slug)',{count:'exact'}).eq('user_id',uid).order('created_at',{ascending:false}).limit(100)
+      ]);
+      if(!valid())return;
+      admin.hidden=Boolean(role.error)||!['admin','moderator'].includes(role.data?.role);
+      metrics.textContent=`Comments & replies: ${comments.error?'—':comments.count??comments.data.length} · Liked articles: ${likes.error?'—':likes.count??likes.data.length}`;
+      if(comments.error)commentsList.append(el('p','Could not load your comments.'));
+      else if(!comments.data.length)commentsList.append(el('p','No comments yet.'));
+      else for(const c of comments.data){const card=el('article');card.style.cssText='border-top:1px solid var(--line);padding:12px 0;overflow-wrap:anywhere';card.append(articleLink(c.articles),el('small',`${c.parent_id?'Reply':'Comment'} · ${c.status} · ${new Date(c.created_at).toLocaleString()}`),el('p',c.content));commentsList.append(card);}
+      if(likes.error)likesList.append(el('p','Could not load your likes.'));
+      else if(!likes.data.length)likesList.append(el('p','No liked articles yet.'));
+      else for(const l of likes.data){const card=el('p');card.append(articleLink(l.articles),el('small',new Date(l.created_at).toLocaleString()));likesList.append(card);}
+      feedback.textContent=(role.error||comments.error||likes.error)?'Some activity could not be loaded. Refresh to try again.':'Showing up to 100 recent entries per list.';
+    }catch(e){if(valid())feedback.textContent='Unable to load activity. Refresh to try again.';}
+    finally{if(valid())refresh.disabled=false;}
+  }
+  refresh.onclick=()=>{if(currentUser&&!recovering)loadActivity(currentUser,revision);};
   function setMode(next) {
     mode = next;
     const signup = next === 'register', reset = next === 'reset';
@@ -54,7 +88,7 @@
     status(result.data ? 'Signed in. Your reader profile is ready.' : 'Signed in. Please save a public display name.');
   }
   async function renderSession(session) {
-    const version = ++revision;
+    const version = ++revision; clearActivity();
     if (!session) { currentUser = null; recovering = false; show('guest'); if (initialError) status('The email link is invalid or expired. Request a new link.'); return; }
     const {data,error} = await client.auth.getUser();
     if (version !== revision) return;
@@ -63,6 +97,7 @@
     if (recovering) { show('recovery'); status('Choose a new password.'); return; }
     $('member-email').textContent = currentUser.email || '';
     show('member'); await loadProfile(currentUser, version);
+    if(version===revision && currentUser) await loadActivity(currentUser,version);
   }
   $('choose-login').onclick = () => { setMode('login'); status('Enter your email and password.'); };
   $('choose-register').onclick = () => { setMode('register'); status('Create an independent reader account.'); };

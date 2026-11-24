@@ -8,6 +8,52 @@
   if (!window.supabase?.createClient) { status.textContent = 'Reader service unavailable. Reload to try again.'; return; }
   const db = window.supabase.createClient('https://jyjrgdoeuzlvvpkymqsu.supabase.co', 'sb_publishable_suBMv7WnrejReyIswL19jw_ipsMz5Gr');
   const liked = new Map();
+  // Commenting needs a server-issued, short-lived N2 Kodes-ID grant.
+  // Reading all historic comments remains free.
+  let kodesGrant=null,kodesBusy=false,kodesPopup=null,kodesState='';
+  const KODES_ORIGIN='https://app.kodes.com.br';
+  const grantValid=()=>Boolean(kodesGrant&&kodesGrant.level>=2&&Date.parse(kodesGrant.expires_at)>Date.now()+5000);
+  function repaintGrants(){for(const p of panels)updateForm(p);}
+  async function refreshKodesGrant(v=revision){
+    if(!user)return;
+    try{
+      const {data,error}=await db.from('kodes_comment_grants').select('level,expires_at').eq('user_id',user.id).maybeSingle();
+      if(v!==revision)return;
+      if(error)throw error;
+      kodesGrant=data;
+    }catch{if(v===revision)kodesGrant=null;}
+    if(v===revision)repaintGrants();
+  }
+  function authorizeKodes(){
+    if(!ready||authError||!user||!profile||kodesBusy)return;
+    if(!['https://vivamidia.com.br','https://www.vivamidia.com.br'].includes(location.origin))return;
+    if(kodesPopup&&!kodesPopup.closed){kodesPopup.focus();return;}
+    kodesState=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(16).padStart(2,'0')).join('');
+    const params=new URLSearchParams({state:kodesState,origin:location.origin});
+    kodesPopup=window.open(KODES_ORIGIN+'/autorizar-comentario-viva?'+params,'viva-kodes-comments','width=650,height=760');
+    if(!kodesPopup)for(const p of panels)if(p.details.open)p.hint.textContent='Permita a janela Kodes-ID no navegador e tente novamente.';
+  }
+  window.addEventListener('message',async event=>{
+    if(event.origin!==KODES_ORIGIN||event.source!==kodesPopup||
+      event.data?.type!=='kodes:viva:comment-authorization'||
+      event.data?.state!==kodesState||
+      typeof event.data?.ticket!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(event.data.ticket)||
+      !user||kodesBusy)return;
+    kodesState='';kodesBusy=true;
+    for(const p of panels)if(p.details.open)p.hint.textContent='Conferindo seu Kodes-ID com o servidor…';
+    try{
+      const {data,error}=await db.functions.invoke('kodes-comment-grant',{body:{ticket:event.data.ticket}});
+      if(error||data?.authorized!==true||!Number.isInteger(data.level)||data.level<2||!data.expires_at)
+        throw Error('Authorization failed');
+      kodesGrant={level:data.level,expires_at:data.expires_at};
+      kodesPopup?.close();kodesPopup=null;
+      repaintGrants();
+      for(const p of panels)if(p.details.open)p.input.focus();
+    }catch{
+      kodesGrant=null;repaintGrants();
+      for(const p of panels)if(p.details.open)p.hint.textContent='Não foi possível validar seu Kodes-ID. Clique novamente em Ativar Kodes-ID.';
+    }finally{kodesBusy=false;}
+  });
   let likesReady = false, likesError = false, staff = false;
   const adminLink = node('a','Administration Center'); adminLink.href='/admin'; adminLink.hidden=true; account.after(adminLink);
   function paintLike(p) {
@@ -57,16 +103,21 @@
     account.textContent = user ? 'My account' : 'Sign in / Create account'; logout.hidden = !user; adminLink.hidden = !staff || !ready || authError;
   }
   function updateForm(p) {
-    p.form.hidden = !(ready && user && profile && p.article?.comments_enabled && !authError);
+    const canComment=ready&&user&&profile&&p.article?.comments_enabled&&!authError;
+    p.form.hidden=!(canComment&&grantValid());
+    p.gateButton.hidden=!(canComment&&!grantValid());
+    p.gateButton.disabled=kodesBusy;
     p.hint.replaceChildren();
     if (!ready) p.hint.textContent='Checking reader session…';
     else if (authError) p.hint.append('Unable to verify your account. ',accountLink('Open your account'));
     else if (!p.article) p.hint.textContent='Comments are currently unavailable for this article.';
     else if (!p.article.comments_enabled) p.hint.textContent='Comments are closed for this article.';
-    else if (!user) p.hint.append(accountLink('Sign in or create a reader account'),' to join the discussion.');
+    else if (!user) p.hint.append('Leitura livre. Para comentar, ',accountLink('entre na sua conta Viva Mídia'),' e confirme seu Kodes-ID N2.');
     else if (!profile) p.hint.append(accountLink('Complete your reader profile'),' before commenting.');
-    else p.hint.textContent='Commenting as '+profile.display_name+'. Comments are reviewed before publication.';
-    if (p.form.hidden) clearReply(p);
+    else if(!grantValid())p.hint.textContent='Para comentar ou responder, vincule seu Kodes-ID e confirme o nível N2. Seus comentários anteriores permanecem visíveis.';
+    else p.hint.textContent='Kodes-ID N2 confirmado. Comentando como '+profile.display_name+'. Comentários passam por moderação.';
+    // Preserve drafts and reply targets during Kodes-ID authorization.
+    if(!canComment)clearReply(p);
   }
   function clearReply(p) { p.parent=null; p.replyInfo.hidden=true; p.replyText.textContent=''; }
   function showComments(p, rows) {
@@ -80,7 +131,7 @@
       if (c.status !== 'approved') card.append(node('small',c.status === 'pending' ? 'Awaiting moderation — visible only to you and administrators' : 'Not published ('+c.status+')','reader-comment-meta'));
       card.append(node('p',c.content,'reader-comment-content'));
       if (user && profile && p.article.comments_enabled && c.status==='approved' && !authError) {
-        const b=node('button','Reply'); b.type='button'; b.onclick=()=>{p.parent=c.id;p.replyInfo.hidden=false;p.replyText.textContent='Replying to '+name;p.input.focus();}; card.append(b);
+        const b=node('button','Reply'); b.type='button'; b.onclick=()=>{if(!grantValid()){authorizeKodes();return;}p.parent=c.id;p.replyInfo.hidden=false;p.replyText.textContent='Replying to '+name;p.input.focus();}; card.append(b);
       }
       p.list.append(card);
     }
@@ -105,7 +156,7 @@
     } catch(e) { if(request!==p.request || authRev!==revision)return; p.article=null;updateForm(p);p.list.replaceChildren(node('p','Unable to load comments. Use Refresh comments to try again.')); }
   }
   async function updateSession(session) {
-    const v=++revision; user=null; profile=null; ready=false; authError=false; staff=false; liked.clear(); likesReady=false; likesError=false;updateHeader();
+    const v=++revision;user=null;profile=null;ready=false;authError=false;staff=false;liked.clear();likesReady=false;likesError=false;kodesGrant=null;updateHeader();
     for(const p of panels){p.request++;p.list.replaceChildren();p.article=null;clearReply(p);p.input.value='';p.likeMessage.textContent='';paintLike(p);updateForm(p);}
     try {
       if(session) {
@@ -122,7 +173,7 @@
     } catch(e){if(v!==revision)return;user=null;profile=null;authError=true;}
     if(v!==revision)return;ready=true;updateHeader();
     for(const p of panels){paintLike(p);updateForm(p);if(p.details.open) load(p);}
-    if(user&&profile&&!authError)loadLikes(v);
+    if(user&&profile&&!authError){loadLikes(v);void refreshKodesGrant(v);}
   }
   for(const article of document.querySelectorAll('article[data-article-slug]')) {
     const like=node('button','♡ Like article');like.type='button';like.disabled=true;like.setAttribute('aria-pressed','false');
@@ -132,16 +183,21 @@
     const summary=node('summary','Comments / Join the discussion');
     const hint=node('p','Open to view comments.','reader-hint');
     const list=node('div');const refresh=node('button','Refresh comments');refresh.type='button';
+    const gateButton=node('button','Ativar meu Kodes-ID para comentar','reader-primary');
+    gateButton.type='button';gateButton.hidden=true;
     const form=node('form');form.hidden=true;
     const replyInfo=node('div');replyInfo.hidden=true;const replyText=node('span');const cancel=node('button','Cancel reply');cancel.type='button';replyInfo.append(replyText,cancel);
     const label=node('label','Your comment');const input=node('textarea');input.required=true;input.maxLength=3000;input.rows=4;input.placeholder='Share your thoughts…';label.append(input);
     const submit=node('button','Submit comment','reader-primary');submit.type='submit';
     const message=node('p',undefined,'reader-hint');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
-    form.append(replyInfo,label,submit);details.append(summary,hint,list,refresh,form,message);article.append(details);
-    const p={like,likeMessage,likeBusy:false,details,hint,list,form,input,replyInfo,replyText,slug:article.dataset.articleSlug,article:null,parent:null,request:0,busy:false};panels.push(p);like.onclick=()=>toggleLike(p);
+    form.append(replyInfo,label,submit);details.append(summary,hint,list,refresh,gateButton,form,message);article.append(details);
+    const p={like,likeMessage,likeBusy:false,details,hint,list,form,gateButton,input,replyInfo,replyText,slug:article.dataset.articleSlug,article:null,parent:null,request:0,busy:false};panels.push(p);like.onclick=()=>toggleLike(p);
+    gateButton.onclick=()=>authorizeKodes();
     cancel.onclick=()=>clearReply(p);refresh.onclick=()=>load(p);details.addEventListener('toggle',()=>{if(details.open && ready)load(p);});
     form.addEventListener('submit',async e=>{
-      e.preventDefault();if(p.busy || !ready || !user || !profile || !p.article?.comments_enabled || authError)return;
+      e.preventDefault();
+      if(!grantValid()){message.textContent='Confirme seu Kodes-ID N2 antes de comentar.';repaintGrants();return;}
+      if(p.busy||!ready||!user||!profile||!p.article?.comments_enabled||authError)return;
       const content=input.value.trim();if(!content || content.length>3000){message.textContent='Write a comment between 1 and 3000 characters.';return;}
       p.busy=true;submit.disabled=true;message.textContent='Submitting comment…';const v=revision;
       try {

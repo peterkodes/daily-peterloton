@@ -16,10 +16,12 @@ button:disabled{opacity:.6;cursor:wait}footer{margin-top:20px;font-size:12px;col
 <p style="color:#ad4a05;font-size:12px;font-weight:800;letter-spacing:.13em">VIVA MÍDIA × KODES-ID</p>
 <h1>Autorizar vínculo de contas</h1>
 <p>Você continuará usando sua conta Viva Mídia. A associação permite que seu Kodes-ID reconheça sua participação, sem apagar comentários ou conceder permissões administrativas.</p>
-<p id="account"></p>
+<p id="account" style="font-weight:700" aria-live="polite"></p>
+<p style="font-size:13px">Confira se esta é a <strong>sua</strong> conta de leitor. Usar o mesmo navegador não torna duas contas da mesma pessoa.</p>
 <div id="status" role="status" class="status">Conferindo sua sessão no site...</div>
 <button id="authorize" type="button" disabled>Autorizar associação ao Kodes-ID</button>
 <button id="retry" type="button" class="secondary">Já entrei, conferir novamente</button>
+<button id="switch" type="button" class="secondary">Sair desta conta Viva Mídia</button>
 <a class="button secondary" href="/account" target="_blank" rel="noopener noreferrer">Entrar na Viva Mídia</a>
 <footer>Esta janela envia a prova da sessão somente ao endereço oficial https://app.kodes.com.br, mediante sua autorização. Nenhuma senha é compartilhada.</footer>
 </section></main>
@@ -33,16 +35,17 @@ button:disabled{opacity:.6;cursor:wait}footer{margin-top:20px;font-size:12px;col
  const status=document.getElementById('status');
  const button=document.getElementById('authorize');
  const refresh=document.getElementById('retry');
+ const switchAccount=document.getElementById('switch');
  const account=document.getElementById('account');
  let sessionToken=null;
  if(!/^[0-9a-f]{48}$/.test(state)||!window.opener||window.opener.closed){
    status.textContent='Esta janela deve ser aberta pela sua conta Kodes-ID. Volte ao Kodes e inicie o vínculo.';
-   button.hidden=true;refresh.hidden=true;return;
+   button.hidden=true;refresh.hidden=true;switchAccount.hidden=true;return;
  }
  if(!window.supabase?.createClient){status.textContent='Não foi possível carregar a autenticação da Viva Mídia.';return;}
  const viva=window.supabase.createClient('https://jyjrgdoeuzlvvpkymqsu.supabase.co','sb_publishable_suBMv7WnrejReyIswL19jw_ipsMz5Gr',{auth:{persistSession:true,autoRefreshToken:true}});
  async function check(){
-   button.disabled=true;sessionToken=null;status.textContent='Validando sua conta Viva Mídia...';
+   button.disabled=true;sessionToken=null;account.textContent='';status.textContent='Validando sua conta Viva Mídia...';
    try{
      const {data:{session}}=await viva.auth.getSession();
      if(!session){status.textContent='Você ainda não está logado na Viva Mídia. Abra “Entrar na Viva Mídia”, faça seu login e clique em “Já entrei”.';return;}
@@ -50,7 +53,7 @@ button:disabled{opacity:.6;cursor:wait}footer{margin-top:20px;font-size:12px;col
      if(error||!data?.user){status.textContent='Sua sessão expirou. Entre novamente no portal.';return;}
      sessionToken=session.access_token;
      account.textContent='Conta Viva Mídia autenticada: '+(data.user.email||'Leitor');
-     button.disabled=false;status.textContent='Conta confirmada. Clique em Autorizar para concluir no Kodes-ID.';
+     button.disabled=false;status.textContent='Confira o e-mail exibido. Só autorize se esta for sua conta; o Kodes fará uma segunda verificação antes de vincular.';
    }catch{status.textContent='Falha ao validar sessão. Tente novamente.';}
  }
  button.addEventListener('click',()=>{
@@ -58,6 +61,15 @@ button:disabled{opacity:.6;cursor:wait}footer{margin-top:20px;font-size:12px;col
    window.opener.postMessage({type:'kodes:viva:identity',state,access_token:sessionToken},KODES_ORIGIN);
    sessionToken=null;button.disabled=true;
    status.textContent='Autorização enviada ao Kodes-ID. Volte à janela do Kodes para confirmar.';
+ });
+ switchAccount.addEventListener('click',async()=>{
+   button.disabled=true;sessionToken=null;account.textContent='';
+   status.textContent='Encerrando apenas esta sessão Viva Mídia...';
+   try{
+     const {error}=await viva.auth.signOut({scope:'local'});
+     if(error)throw error;
+     status.textContent='Sessão encerrada neste navegador. Entre com sua conta correta na Viva Mídia e clique em “Já entrei, conferir novamente”.';
+   }catch{status.textContent='Não foi possível encerrar a sessão. Saia da conta diretamente no portal.';}
  });
  refresh.addEventListener('click',check);
  check();

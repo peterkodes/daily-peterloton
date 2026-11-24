@@ -8,7 +8,7 @@
 3. **Autorizar Kodes-ID:** o portal abre `https://app.kodes.com.br/autorizar-comentario-viva` em janela segura com `state` aleatório e `origin` validada. O fluxo apresenta o motivo da exigência e o nível mínimo N2.
 4. **Conta Kodes-ID:** usuário entra ou cria Kodes-ID pessoal. Não há cadastro de empresa. É obrigatório confirmar seu e-mail Kodes.
 5. **Vincular identidades:** com consentimento, o Kodes confere ambas as sessões no servidor. Não vincula apenas pelo nome ou e-mail, não concede poderes de administrador e não apaga comentários antigos.
-6. **N2 de participação:** o piloto define N2 como conta Kodes-ID com e-mail confirmado e vínculo de titularidade com a conta da Viva. É uma credencial de participação; não equivale a verificação de diploma, documento de identidade ou nível de autoridade profissional.
+6. **N2 de participação:** após confirmar o e-mail Kodes-ID, o leitor preenche o questionário de credencial do protótipo Vértice: áreas de interesse, relação com os temas, autopercepção de conhecimento e declaração de responsabilidade. O servidor registra a emissão da credencial N2; além disso, exige vínculo comprovado com a Viva. O preenchimento é autodeclarado e não comprova diploma, identidade civil nem expertise profissional.
 7. **Autorizar:** o Kodes emite um ticket aleatório, de uso único, válido por 5 minutos, entregue apenas à janela Viva com `postMessage` de origem e estado verificados. A API Viva envia o ticket ao servidor Kodes e recebe autorização de publicação temporária.
 8. **Voltar ao artigo:** a página original libera o mesmo formulário preservando rascunho e contexto, com status "Kodes-ID N2 confirmado". O comentário é enviado como `pending`, passa por moderação normal da Viva; também se aplica a respostas. A validação N2 é reexigida após expiração.
 9. **Histórico e revogação:** comentários anteriores continuam legíveis; usuário pode desvincular identidade no Kodes, invalidando novos tickets. Autorizações previamente emitidas duram no máximo 10 minutos; não há elevação de permissões administrativas.
@@ -24,6 +24,7 @@
 - [ ] Leitor Viva com login, sem Kodes, recebe CTA.
 - [ ] Leitor Kodes logado, mas sem vínculo, não recebe ticket.
 - [ ] E-mail Kodes não confirmado não recebe ticket.
+- [ ] Sem questionário N2 preenchido, não recebe ticket; campos obrigatórios e responsabilidade precisam ser aceitos.
 - [ ] Consentimento e sessões válidas criam um único vínculo.
 - [ ] Conta Viva A não consegue resgatar ticket vinculado à Viva B.
 - [ ] Ticket expirado, repetido ou adulterado é rejeitado.

@@ -131,6 +131,8 @@
     '.reader-comment-depth{font:600 11px/1.3 system-ui,sans-serif;color:var(--mute,#777)}',
     '.reader-comment-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 3px}',
     '.reader-comment-author{cursor:pointer;background:transparent;border:none;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px;font:inherit;font-weight:700}',
+    '.reader-kodes-verified{display:inline-flex;gap:5px;align-items:center;padding:3px 7px;border:1px solid #b7d89f;background:#eff8e8;color:#234c1e;border-radius:6px;font:700 11px/1.3 system-ui,sans-serif;cursor:pointer}',
+    '.reader-kodes-verified:focus-visible{outline:2px solid #236f39;outline-offset:2px}',
     '.reader-reply-compose{margin:9px 0 10px;padding:12px;border-radius:10px;border:1px solid var(--line,#ddd);background:var(--card,#fff)}',
     '.reader-kodes-profile-backdrop{position:fixed;z-index:2147482500;inset:0;display:grid;place-items:center;background:#17221dcc;padding:14px}',
     '.reader-kodes-profile-panel{width:min(400px,100%);max-height:85vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:16px;padding:24px;box-shadow:0 24px 60px #0003;font:14px/1.6 system-ui,sans-serif}',
@@ -140,27 +142,63 @@
   ].join('');
   document.head.append(threadedStyle);
 
-  function openParticipantProfile(name,visibleCount){
-    // A portal-only account must not be misrepresented as Kodes verified.
-    // A future consented Kodes public profile resolver may replace this
-    // placeholder once a link is validated server-side.
+  const KODES_PROFILE_API='https://marwnbmablxzziyvhxof.supabase.co/functions/v1/kodes-public-participant';
+  const KODES_SITE='7554902f-4506-494e-8f69-50e4cef8e767';
+  const publicCards=new Map();
+  const consentedCard=userId=>{
+    if(typeof userId!=='string'||!/^[0-9a-f-]{36}$/i.test(userId))return Promise.resolve(null);
+    if(!publicCards.has(userId)){
+      const url=new URL(KODES_PROFILE_API);
+      url.searchParams.set('site',KODES_SITE);url.searchParams.set('user',userId);
+      const query=fetch(url,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'})
+        .then(r=>{if(!r.ok)throw Error('Profile lookup unavailable');return r.json()})
+        .then(info=>info?.published===true&&info?.identity_type==='consented_kodes_account'&&
+           typeof info.display_name==='string'&&Number.isInteger(info.level)&&
+           info.level>=1&&info.level<=2?info:null)
+        .catch(()=>null);
+      publicCards.set(userId,query);
+    }
+    return publicCards.get(userId);
+  };
+  function openParticipantProfile(name,visibleCount,userId){
+    const existing=document.querySelector('.reader-kodes-profile-backdrop');
+    if(existing)existing.remove();
+    const previousFocus=document.activeElement;
     const backdrop=node('div',undefined,'reader-kodes-profile-backdrop');
     const dialog=node('section',undefined,'reader-kodes-profile-panel');
     dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');
     const title=node('h3',name);title.id='reader-profile-title-'+Math.random().toString(36).slice(2);
     dialog.setAttribute('aria-labelledby',title.id);
     const close=node('button','Fechar');close.type='button';
+    let active=true;
     const stop=e=>{if(e.key==='Escape')dismiss();};
-    const dismiss=()=>{backdrop.remove();document.removeEventListener('keydown',stop);};
+    const dismiss=()=>{
+      active=false;backdrop.remove();document.removeEventListener('keydown',stop);
+      if(previousFocus?.isConnected&&typeof previousFocus.focus==='function')previousFocus.focus();
+    };
     close.onclick=dismiss;backdrop.onclick=e=>{if(e.target===backdrop)dismiss()};
+    const publicInfo=node('div','Consultando autorização do perfil Kodes…','reader-comment-meta');
+    publicInfo.setAttribute('role','status');
     dialog.append(title,
-      node('p','Perfil público do participante neste portal.','reader-comment-meta'),
-      node('p',visibleCount+' comentário(s) visível(is) nesta lista de discussão.'),
-      node('p','Credencial pública Kodes-ID: ainda não vinculada e autorizada para exibição.','reader-comment-meta'),
-      close);
+      node('p','Perfil do comentarista neste portal','reader-comment-meta'),
+      node('p',visibleCount+' comentário(s) aprovado(s) nesta discussão carregada.'),
+      publicInfo,close);
     backdrop.append(dialog);document.body.append(backdrop);
-    document.addEventListener('keydown',stop);
-    close.focus();
+    document.addEventListener('keydown',stop);close.focus();
+    void consentedCard(userId).then(info=>{
+      if(!active)return;
+      publicInfo.replaceChildren();
+      if(!info){
+        publicInfo.append(node('p','Perfil Kodes-ID não disponibilizado publicamente por este participante ou temporariamente indisponível.'));
+        return;
+      }
+      publicInfo.append(
+        node('p','Identidade pública consentida no Kodes: '+info.display_name),
+        node('p','Participação Kodes-ID N'+info.level+' · '+(info.level===2?'Comentarista autodeclarado':'Leitor com e-mail confirmado')),
+      );
+      if(info.headline)publicInfo.append(node('p',info.headline));
+      publicInfo.append(node('small','O nível N2 não certifica identidade civil, profissão ou especialidade.'));
+    });
   }
   function showComments(p, rows) {
     p.list.replaceChildren();
@@ -196,7 +234,15 @@
       const identity=node('button',name,'reader-comment-author');
       identity.type='button';
       identity.setAttribute('aria-label','Abrir perfil do participante '+name);
-      identity.onclick=()=>openParticipantProfile(name,rows.filter(x=>x.user_id===c.user_id&&x.status==='approved').length);
+      const viewProfile=()=>openParticipantProfile(name,rows.filter(x=>x.user_id===c.user_id&&x.status==='approved').length,c.user_id);
+      identity.onclick=viewProfile;
+      void consentedCard(c.user_id).then(info=>{
+        if(!info||!byline.isConnected)return;
+        const badge=node('button','Kodes-ID N'+info.level,'reader-kodes-verified');
+        badge.type='button';badge.setAttribute('aria-label','Ver identidade pública autorizada no Kodes-ID de '+name);
+        badge.onclick=viewProfile;
+        byline.append(badge);
+      });
       byline.append(identity,node('span',' · '+new Date(c.created_at).toLocaleString('pt-BR'),'reader-comment-meta'));
       card.append(byline);
       if(c.parent_id&&!index.has(c.parent_id))

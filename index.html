@@ -76,7 +76,7 @@ header h1{font-family:Georgia,serif;font-size:clamp(30px,4vw,44px)}
 <a href="#newsroom">Notícias</a>
 <a href="#kodes-author-guides">Autores e editorias</a>
 <a href="#kodes-identity-guide">Identidade Kodes-ID</a>
-<a class="ks-signin" href="https://app.kodes.com.br/minha-conta?site=7554902f-4506-494e-8f69-50e4cef8e767" target="_blank" rel="noopener noreferrer">Minha conta Kodes-ID</a>
+<a class="ks-signin" href="https://app.kodes.com.br/participar?site=7554902f-4506-494e-8f69-50e4cef8e767&amp;intent=identity" target="_blank" rel="noopener noreferrer">Minha conta Kodes-ID</a>
 </nav></header>
 <section id="newsroom"><h2>Today</h2>
 <article class="post road" id="article-2026-11-10-road-c53601c3cea2eb60" data-article-slug="2026-11-10-road-c53601c3cea2eb60">
@@ -1051,7 +1051,7 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
   'use strict';
   const siteId = '7554902f-4506-494e-8f69-50e4cef8e767';
   const api = 'https://marwnbmablxzziyvhxof.supabase.co/functions/v1/kodes-public-config';
-  const uri = 'https://app.kodes.com.br/minha-conta?site=' + encodeURIComponent(siteId);
+  const uri = 'https://app.kodes.com.br/participar?site=' + encodeURIComponent(siteId) + '&intent=identity';
   const $ = (t,cls,value) => {const n=document.createElement(t);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n;};
   // Partner website retains its independent login, moderation and comments.
   const feed = document.getElementById('newsroom');
@@ -1072,7 +1072,7 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
   const levels=$('div','kodes-levels');
   for(const label of ['N1 · Leitor','N2 · Comentarista','N3 · Colaborador','N4 · Autor','N5 · Editor'])levels.append($('span','',label));
   identity.append(levels);
-  const link=$('a','kodes-btn','Conhecer minha identidade Kodes-ID');
+  const link=$('a','kodes-btn','Entrar ou conferir minha identidade Kodes-ID');
   link.href=uri;link.target='_blank';link.rel='noopener noreferrer';identity.append(link);
   identity.append($('small','', 'Os níveis acima são explicativos, não credenciais atribuídas automaticamente a leitores ou autores deste portal.'));
   const authors=$('section','kodes-panel');authors.id='kodes-author-guides';
@@ -1108,7 +1108,7 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
   authors.append(list);
   const explanation=$('section','kodes-panel');
   explanation.append($('div','kodes-eyebrow','Participação'),$('h3','','Comentários e leitores'));
-  explanation.append($('p','', 'Este portal mantém temporariamente seu cadastro, seus comentários e sua moderação originais. A vinculação segura ao Kodes-ID será disponibilizada após integração e consentimento.'));
+  explanation.append($('p','', 'Seu acesso Kodes-ID é pessoal e independente da administração da empresa. Confira qual conta Kodes está autenticada antes de iniciar a autorização para comentar. A vinculação exige confirmação das duas contas; comentários ficam sob as regras do portal.'));
   const account=$('a','', 'Acessar Kodes-ID');account.href=uri;account.target='_blank';account.rel='noopener noreferrer';explanation.append(account);
   aside.append(identity,authors,explanation);
   // Server records a throttled technical heartbeat on successful request.

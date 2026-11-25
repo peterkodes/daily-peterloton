@@ -213,7 +213,20 @@
         node('p','Participação Kodes-ID N'+info.level+' · '+(info.level===2?'Comentarista autodeclarado':'Leitor com e-mail confirmado')),
       );
       if(info.headline)publicInfo.append(node('p',info.headline));
-      publicInfo.append(node('small','O nível N2 não certifica identidade civil, profissão ou especialidade.'));
+      if(Array.isArray(info.self_declared_areas)&&info.self_declared_areas.length){
+        publicInfo.append(node('p','Áreas de interesse declaradas: '+info.self_declared_areas.filter(x=>typeof x==='string').join(' · ')));
+      }
+      if(typeof info.public_profile_url==='string'){
+        try{
+          const url=new URL(info.public_profile_url);
+          if(url.origin===KODES_ORIGIN&&/^\\/users\\/[a-f0-9-]{36}$/i.test(url.pathname)){
+            const link=node('a','Ver perfil público no Kodes-ID');link.href=url.href;
+            link.target='_blank';link.rel='noopener noreferrer';
+            publicInfo.append(link);
+          }
+        }catch{/* Invalid public profile URL is ignored. */}
+      }
+      publicInfo.append(node('small','N2 confirma e-mail e declaração de responsabilidade, não identidade civil, profissão ou especialidade.'));
     });
   }
   function showComments(p, rows) {

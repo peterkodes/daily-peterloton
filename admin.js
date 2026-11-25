@@ -10,6 +10,47 @@
  const staff=['admin','moderator']; const size=25;
  let tab='comments', page=0, version=0, busy=false, authorized=false;
  const date = val => val ? new Date(val).toLocaleString() : '—';
+ // Editorial choice belongs to the publisher, not the reader.
+ // Server-side insert trigger makes the policy effective for every client.
+ async function moderationSettings(){
+   const card=document.getElementById('kodes-moderation-settings');
+   if(!card||!authorized)return;
+   const select=card.querySelector('select');
+   const result=card.querySelector('[role=status]');
+   const save=card.querySelector('button');
+   const {data,error}=await db.from('kodes_comment_moderation_settings')
+     .select('approval_mode').eq('id',true).maybeSingle();
+   if(error||!data){result.textContent='Não foi possível consultar a política de comentários.';save.disabled=true;return;}
+   select.value=data.approval_mode;
+   const {data:session}=await db.auth.getUser();
+   const {data:role}=await db.from('user_roles').select('role').eq('user_id',session?.user?.id||'').maybeSingle();
+   save.disabled=role?.role!=='admin';
+   select.disabled=role?.role!=='admin';
+   result.textContent=role?.role==='admin'
+     ?'Configuração ativa: '+(data.approval_mode==='automatic'?'aprovação automática':'revisão manual')+'.'
+     :'Somente administradores podem alterar esta configuração.';
+ }
+ async function saveModerationSettings(){
+   const card=document.getElementById('kodes-moderation-settings');
+   if(!card)return;
+   const save=card.querySelector('button'),select=card.querySelector('select');
+   const result=card.querySelector('[role=status]'),mode=select.value;
+   if(!['manual','automatic'].includes(mode)||!await access())return;
+   const {data:session}=await db.auth.getUser();
+   const {data:role}=await db.from('user_roles').select('role').eq('user_id',session?.user?.id||'').maybeSingle();
+   if(role?.role!=='admin'){result.textContent='Permissão de administrador necessária.';return;}
+   save.disabled=true;result.textContent='Salvando política de comentários…';
+   const {data,error}=await db.from('kodes_comment_moderation_settings')
+     .update({approval_mode:mode}).eq('id',true).select('approval_mode').maybeSingle();
+   if(error||data?.approval_mode!==mode){result.textContent='Falha ao salvar. A configuração anterior permanece ativa.';}
+   else result.textContent=mode==='automatic'
+     ?'Ativado: novos comentários com Kodes-ID N2 autorizado são publicados automaticamente.'
+     :'Ativado: novos comentários precisam de aprovação da equipe.';
+   save.disabled=false;
+ }
+ const moderationCard=document.getElementById('kodes-moderation-settings');
+ if(moderationCard)moderationCard.querySelector('button')?.addEventListener('click',()=>void saveModerationSettings());
+
  const label = {comments:'Comments',articles:'Published articles',authors:'Editorial authors',readers:'Reader profiles',logs:'Moderation activity log'};
  function err(e){return e?.message || 'Request failed.';}
  async function access(){
@@ -49,7 +90,7 @@
    const rows=result.data||[]; if(!rows.length)$('records').append(node('p','No records in this view.','muted'));else rows.slice(0,size).forEach(r=>$('records').append(record(r)));
    $('prev').disabled=page===0;$('next').disabled=rows.length<=size;
  }
- async function refresh(notice){const v=++version;message('Checking permissions and loading data…');try{if(!await access()||v!==version)return;await Promise.all([metrics(v),records(v)]);if(v===version&&authorized)message(notice||'Administration ready.');}catch(e){if(v===version)message('Unable to load: '+err(e));}}
+ async function refresh(notice){const v=++version;message('Checking permissions and loading data…');try{if(!await access()||v!==version)return;await Promise.all([metrics(v),records(v),moderationSettings()]);if(v===version&&authorized)message(notice||'Administration ready.');}catch(e){if(v===version)message('Unable to load: '+err(e));}}
  async function moderate(row,target){if(busy||!window.confirm('Change comment status from '+row.status+' to '+target+'?'))return;busy=true;const buttons=[...$('records').querySelectorAll('button')];buttons.forEach(b=>b.disabled=true);try{if(!await access())return;const r=await db.from('comments').update({status:target}).eq('id',row.id).eq('status',row.status).select('id,status').maybeSingle();if(r.error)throw r.error;if(!r.data||r.data.status!==target){await refresh('Comment was not changed. Permissions or status may have changed.');return;}await refresh('Comment status updated to '+target+'.');}catch(e){message('Moderation failed: '+err(e));buttons.forEach(b=>b.disabled=false);}finally{busy=false;}}
  $('tabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b||busy)return;tab=b.dataset.tab;page=0;for(const t of $('tabs').querySelectorAll('button'))t.setAttribute('aria-current',String(t===b));refresh();});
  $('filter').onchange=()=>{page=0;refresh();};$('prev').onclick=()=>{if(page>0){page--;refresh();}};$('next').onclick=()=>{page++;refresh();};$('refresh').onclick=()=>refresh();

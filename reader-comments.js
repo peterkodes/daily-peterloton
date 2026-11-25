@@ -4,6 +4,11 @@
   const node = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
   const status = $('reader-state'), account = $('reader-account'), logout = $('reader-logout');
   const panels = [];
+  let commentApprovalMode='manual';
+  async function refreshApprovalMode(){
+    const {data,error}=await db.from('kodes_comment_moderation_settings').select('approval_mode').eq('id',true).maybeSingle();
+    if(!error&&['manual','automatic'].includes(data?.approval_mode))commentApprovalMode=data.approval_mode;
+  }
   let user = null, profile = null, ready = false, authError = false, revision = 0;
   if (!window.supabase?.createClient) { status.textContent = 'Reader service unavailable. Reload to try again.'; return; }
   const db = window.supabase.createClient('https://jyjrgdoeuzlvvpkymqsu.supabase.co', 'sb_publishable_suBMv7WnrejReyIswL19jw_ipsMz5Gr');
@@ -115,7 +120,7 @@
     else if (!user) p.hint.append('Leitura livre. Para comentar, ',accountLink('entre na sua conta Viva Mídia'),' e confirme seu Kodes-ID N2.');
     else if (!profile) p.hint.append(accountLink('Complete your reader profile'),' before commenting.');
     else if(!grantValid())p.hint.textContent='Para comentar ou responder, vincule seu Kodes-ID e confirme o nível N2. Seus comentários anteriores permanecem visíveis.';
-    else p.hint.textContent='Kodes-ID N2 confirmado. Comentando como '+profile.display_name+'. Comentários passam por moderação.';
+    else p.hint.textContent='Kodes-ID N2 confirmado. Comentando como '+profile.display_name+'. '+(commentApprovalMode==='automatic'?'Publicação automática habilitada pela redação.':'Sujeito à aprovação editorial.');
     // Preserve drafts and reply targets during Kodes-ID authorization.
     if(!canComment)clearReply(p);
   }
@@ -133,6 +138,8 @@
     '.reader-comment-author{cursor:pointer;background:transparent;border:none;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px;font:inherit;font-weight:700}',
     '.reader-kodes-verified{display:inline-flex;gap:5px;align-items:center;padding:3px 7px;border:1px solid #b7d89f;background:#eff8e8;color:#234c1e;border-radius:6px;font:700 11px/1.3 system-ui,sans-serif;cursor:pointer}',
     '.reader-kodes-verified:focus-visible{outline:2px solid #236f39;outline-offset:2px}',
+    '.reader-kodes-verified .kodes-kmark{display:inline-grid;place-items:center;width:19px;height:19px;border-radius:4px;background:#19325c;color:#fff;font-weight:900;font-size:13px}',
+    '.reader-kodes-verified{border-radius:8px;background:#f4f8fd;border-color:#c5d5ea;color:#18345e;font-weight:800}',
     '.reader-reply-compose{margin:9px 0 10px;padding:12px;border-radius:10px;border:1px solid var(--line,#ddd);background:var(--card,#fff)}',
     '.reader-kodes-profile-backdrop{position:fixed;z-index:2147482500;inset:0;display:grid;place-items:center;background:#17221dcc;padding:14px}',
     '.reader-kodes-profile-panel{width:min(400px,100%);max-height:85vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:16px;padding:24px;box-shadow:0 24px 60px #0003;font:14px/1.6 system-ui,sans-serif}',
@@ -236,13 +243,18 @@
       identity.setAttribute('aria-label','Abrir perfil do participante '+name);
       const viewProfile=()=>openParticipantProfile(name,rows.filter(x=>x.user_id===c.user_id&&x.status==='approved').length,c.user_id);
       identity.onclick=viewProfile;
-      void consentedCard(c.user_id).then(info=>{
-        if(!info||!byline.isConnected)return;
-        const badge=node('button','Kodes-ID N'+info.level,'reader-kodes-verified');
-        badge.type='button';badge.setAttribute('aria-label','Ver identidade pública autorizada no Kodes-ID de '+name);
+      // Only show verified N-level if the server captured an actual grant at publication.
+      const stamped=Array.isArray(c.kodes_comment_signatures)
+        ?c.kodes_comment_signatures[0]:c.kodes_comment_signatures;
+      if(stamped&&Number.isInteger(stamped.level)&&stamped.level>=2){
+        const badge=node('button',undefined,'reader-kodes-verified');
+        badge.type='button';
+        badge.setAttribute('aria-label','Ver credencial Kodes-ID N'+stamped.level+' deste comentário');
+        const mark=node('span','K','kodes-kmark');
+        badge.append(mark,node('span','N'+stamped.level+' · Comentarista'));
         badge.onclick=viewProfile;
         byline.append(badge);
-      });
+      }
       byline.append(identity,node('span',' · '+new Date(c.created_at).toLocaleString('pt-BR'),'reader-comment-meta'));
       card.append(byline);
       if(c.parent_id&&!index.has(c.parent_id))
@@ -301,8 +313,8 @@
       const article = await db.from('articles').select('id,comments_enabled').eq('slug',p.slug).maybeSingle();
       if (request!==p.request || authRev!==revision) return;
       if(article.error || !article.data) throw new Error('article unavailable');
-      p.article=article.data; updateForm(p);
-      let q=db.from('comments').select('id,parent_id,user_id,content,status,created_at,profiles(display_name)').eq('article_id',p.article.id);
+      p.article=article.data; await refreshApprovalMode(); updateForm(p);
+      let q=db.from('comments').select('id,parent_id,user_id,content,status,created_at,profiles(display_name),kodes_comment_signatures(level,verified_at)').eq('article_id',p.article.id);
       q=user?q.or('status.eq.approved,user_id.eq.'+user.id):q.eq('status','approved');
       const {data,error}=await q.order('created_at',{ascending:false}).limit(300);
       if(request!==p.request || authRev!==revision) return;
@@ -360,7 +372,12 @@
       try {
         const {error}=await db.from('comments').insert({article_id:p.article.id,user_id:user.id,parent_id:p.parent,content});
         if(v!==revision)return;if(error)throw error;
-        input.value='';clearReply(p);message.textContent='Comment submitted successfully. Awaiting moderation.';await load(p);
+        input.value='';clearReply(p);
+        await refreshApprovalMode();
+        message.textContent=commentApprovalMode==='automatic'
+          ?'Comentário enviado. A publicação automática será confirmada pelo servidor.'
+          :'Comentário enviado para aprovação editorial.';
+        await load(p);
       } catch(e){if(v===revision)message.textContent='Your comment could not be submitted. Check your connection and try again.';}
       finally{p.busy=false;submit.disabled=false;}
     });

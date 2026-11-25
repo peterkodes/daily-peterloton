@@ -1065,16 +1065,9 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
   feed.before(columns);
   columns.append(newsroom,aside);
   for(const segment of sections) newsroom.append(segment);
-  const identity=$('section','kodes-panel kodes-panel-primary');
-  identity.id='kodes-identity-guide';
-  identity.append($('div','kodes-eyebrow','Kodes-ID · Identidade e confiança'),$('h3','', 'O conhecimento tem autoria.'));
-  identity.append($('p','', 'O modelo Kodes reconhece participação por área de conhecimento. Cada pessoa conquista níveis mediante critérios e verificação.'));
-  const levels=$('div','kodes-levels');
-  for(const label of ['N1 · Leitor','N2 · Comentarista','N3 · Colaborador','N4 · Autor','N5 · Editor'])levels.append($('span','',label));
-  identity.append(levels);
-  const link=$('a','kodes-btn','Entrar ou conferir minha identidade Kodes-ID');
-  link.href=uri;link.target='_blank';link.rel='noopener noreferrer';identity.append(link);
-  identity.append($('small','', 'Os níveis acima são explicativos, não credenciais atribuídas automaticamente a leitores ou autores deste portal.'));
+  // Kodes lives at the identity-bearing points (bylines and comments).
+  // No large promotional N1–N5 panel: the portal must not impersonate
+  // unissued editorial credentials.
   const authors=$('section','kodes-panel');authors.id='kodes-author-guides';
   authors.append($('div','kodes-eyebrow','Editorial'),$('h3','','Autores e especialidades'));
   authors.append($('p','','Publicações reais e respectivas assinaturas editoriais. Personas de IA não recebem credenciais humanas Kodes-ID.'));
@@ -1106,18 +1099,14 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
     li.append(a,$('em','',String(data.count)+' notícias'));list.append(li);
   }
   authors.append(list);
-  const explanation=$('section','kodes-panel');
-  explanation.append($('div','kodes-eyebrow','Participação'),$('h3','','Comentários e leitores'));
-  explanation.append($('p','', 'Seu acesso Kodes-ID é pessoal e independente da administração da empresa. Confira qual conta Kodes está autenticada antes de iniciar a autorização para comentar. A vinculação exige confirmação das duas contas; comentários ficam sob as regras do portal.'));
-  const account=$('a','', 'Acessar Kodes-ID');account.href=uri;account.target='_blank';account.rel='noopener noreferrer';explanation.append(account);
-  aside.append(identity,authors,explanation);
+  aside.append(authors);
   // Server records a throttled technical heartbeat on successful request.
   // Never render the result or error to public visitors.
   fetch(api+'?site='+encodeURIComponent(siteId),{method:'GET',credentials:'omit',mode:'cors',cache:'no-store'})
     .then(r=>{if(!r.ok)throw Error('unavailable');return r.json();})
     .then(data=>{if(data.site_id!==siteId||data.status!=='active'){
       // Keep basic editorial information, but do not assert linked service availability.
-      identity.querySelector('.kodes-btn').textContent='Conhecer o Kodes-ID';
+      // A failed health check must never display a false verified credential.
     }})
     .catch(()=>{});
 })();

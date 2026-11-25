@@ -31,6 +31,21 @@
     const role=await client.from('user_roles').select('role').eq('user_id',data.user.id).maybeSingle();
     eligible=!role.error&&role.data?.role==='admin';
     if(!eligible){status.textContent='Esta conta não possui permissão de administrador na Viva Mídia.';return}
+    status.textContent='Verificando a instalação segura do conector no servidor…';
+    const readiness=await client.functions.invoke('kodes-managed-install',{
+      body:{action:'preflight',site:SITE}
+    });
+    if(readiness.error||readiness.data?.ready!==true){
+      eligible=false;
+      status.textContent='O conector ainda não foi provisionado no servidor do portal. A ativação permanece indisponível até concluir a instalação protegida no banco.';
+      return;
+    }
+    if(readiness.data?.activated===true){
+      completed=true;eligible=false;
+      status.textContent='Conexão de servidor já ativada. Não é necessário reinstalar.';
+      report('kodes:managed-complete');
+      return;
+    }
     status.textContent='Conta administrativa confirmada. Aguardando a autorização iniciada no Kodes.';
     report('kodes:managed-ready');
   }

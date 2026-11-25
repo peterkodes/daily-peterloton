@@ -36,7 +36,7 @@ h1{font-size:clamp(27px,4vw,39px);line-height:1.15;margin:16px 0 10px;word-break
     <h1 id="name"></h1>
     <span id="role" class="role"></span>
     <p id="bio" class="bio"></p>
-    <p class="note">Esta ficha é uma classificação editorial publicada pela Viva Mídia através do Kodes Connect. Não representa uma verificação de identidade civil, formação profissional ou credencial pessoal Kodes-ID N1–N5.</p>
+    <p id="credential" class="note">Classificação editorial publicada pela Viva Mídia. Não constitui credencial pessoal Kodes-ID.</p>
     <div class="actions"><a href="/">Consultar notícias</a><a href="https://app.kodes.com.br/participar?site=7554902f-4506-494e-8f69-50e4cef8e767&amp;intent=identity" rel="noopener noreferrer">Conhecer Kodes-ID</a></div>
   </section>
  </div>
@@ -60,10 +60,20 @@ h1{font-size:clamp(27px,4vw,39px);line-height:1.15;margin:16px 0 10px;word-break
    .then(r=>{if(!r.ok)throw Error();return r.json()})
    .then(data=>{
      const a=data.authors?.[0];
-     if(data.site_id!==site||data.verified_kodes_credentials!==false||a?.author_key!==key||
+     if(data.site_id!==site||data.identity_type!=='publisher_editorial_directory'||!Array.isArray(data.authors)||a?.author_key!==key||
        !roleNames[a.classification])throw Error();
      document.getElementById('name').textContent=a.display_name;
-     document.getElementById('role').textContent=roleNames[a.classification];
+     const credential=a.personal_editorial_credential;
+     const valid=credential&&credential.consented===true&&credential.scope==='website_only'
+       &&credential.issuer==='www.vivamidia.com.br'&&[3,5].includes(credential.level)
+       &&((a.classification==='collaborator'&&credential.level===3)||
+           (a.classification==='editor'&&credential.level===5));
+     document.getElementById('role').textContent=valid
+       ?'Kodes-ID N'+credential.level+' · '+roleNames[a.classification]
+       :roleNames[a.classification];
+     document.getElementById('credential').textContent=valid
+       ?'Credencial editorial do website confirmada pelo Kodes-ID, com aceite do titular. Emissor: '+credential.issuer+'. Válida somente para este site. Não comprova identidade civil, formação ou profissão.'
+       :'Esta ficha apresenta classificação editorial do website; nenhuma credencial Kodes pessoal N3–N5 está comprovada para esta assinatura.';
      document.getElementById('bio').textContent=a.biography||'Sem biografia editorial pública.';
      document.title=a.display_name+' · Perfil editorial · Viva Mídia';
      status.hidden=true;

@@ -1134,4 +1134,54 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
     .catch(()=>{});
 })();
 </script>
+
+<style id="kodes-article-view-styles">
+/* Article reader mode; the publisher owns text, article IDs and URL fragments. */
+#newsroom .kodes-read-article{display:inline-block;margin:9px 0 3px;border:1px solid #e0d6cc;background:#fff7f0;padding:7px 11px;border-radius:7px;font:700 12px system-ui,sans-serif;color:#a34206;text-decoration:none}
+#newsroom .kodes-back-to-news{display:inline-block;margin:0 0 17px;font:700 13px system-ui,sans-serif;color:#173e70}
+body.kodes-reading #newsroom article[data-article-slug]:not(.kodes-selected){display:none!important}
+body.kodes-reading #newsroom article.kodes-selected{max-width:850px;margin:20px auto 40px;padding:clamp(18px,4vw,32px);border:1px solid #e6e1d9;background:white;border-radius:18px;box-shadow:0 15px 45px #00000009}
+body.kodes-reading #newsroom article.kodes-selected h3{font:700 clamp(24px,3.5vw,37px)/1.15 Georgia,serif;margin:15px 0}
+body.kodes-reading #newsroom article.kodes-selected > p{font:18px/1.8 Georgia,serif;color:#28333a}
+body.kodes-reading #newsroom .kodes-read-article{display:none}
+body.kodes-reading .kodes-side{position:static}
+@media(max-width:700px){body.kodes-reading #newsroom article.kodes-selected{padding:16px}}
+</style>
+<script id="kodes-article-reading-mode">
+/* Scoped to the publisher's existing article anchors. No content duplication. */
+(()=>{
+ 'use strict';
+ const articles=[...document.querySelectorAll('article[data-article-slug]')];
+ if(!articles.length)return;
+ for(const article of articles){
+   const h3=article.querySelector('h3');
+   if(!h3||!article.id)continue;
+   const open=document.createElement('a');
+   open.href='#'+encodeURIComponent(article.id);
+   open.className='kodes-read-article';
+   open.textContent='Ler artigo e participar da discussão';
+   h3.insertAdjacentElement('afterend',open);
+   const back=document.createElement('a');
+   back.href='#newsroom';back.className='kodes-back-to-news';
+   back.textContent='‹ Voltar às notícias';back.hidden=true;
+   article.insertBefore(back,article.firstChild);
+ }
+ function render(){
+   const id=decodeURIComponent(location.hash.slice(1));
+   const active=articles.find(x=>x.id===id);
+   document.body.classList.toggle('kodes-reading',!!active);
+   for(const a of articles){
+     const selected=a===active;
+     a.classList.toggle('kodes-selected',selected);
+     const back=a.querySelector('.kodes-back-to-news');
+     if(back)back.hidden=!selected;
+   }
+   if(active){
+     for(let e=active.parentElement;e;e=e.parentElement)if(e.tagName==='DETAILS')e.open=true;
+   }
+ }
+ window.addEventListener('hashchange',render);
+ render();
+})();
+</script>
 </body></html>

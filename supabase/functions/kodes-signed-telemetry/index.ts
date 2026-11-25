@@ -31,8 +31,14 @@ Deno.serve(async request=>{
      authenticated=!!admin;
    }
  }
- const cron=Deno.env.get('KODES_REPORT_CRON_SECRET'),provided=request.headers.get('x-kodes-report-secret');
- const cronOk=!origin&&typeof cron==='string'&&cron.length>=32&&provided===cron;
+ const provided=request.headers.get('x-kodes-report-secret')||'';
+ let cronOk=false;
+ if(!origin&&/^[a-f0-9]{64}$/.test(provided)){
+   const {data:authorized,error:checkError}=await db.rpc('kodes_viva_verify_managed_scheduler',{
+     p_secret:provided,
+   });
+   cronOk=!checkError&&authorized===true;
+ }
  if(!authenticated&&!cronOk)return response({error:'Viva administrator or authorized scheduler required'},403,origin);
  let body:Record<string,unknown>;
  try{const raw=await request.text();if(raw.length>1000)return response({error:'Invalid request'},400,origin);

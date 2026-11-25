@@ -18,7 +18,7 @@
   let kodesGrant=null,kodesBusy=false,kodesPopup=null,kodesState='';
   const KODES_ORIGIN='https://app.kodes.com.br';
   const grantValid=()=>Boolean(kodesGrant&&kodesGrant.level>=2&&Date.parse(kodesGrant.expires_at)>Date.now()+5000);
-  function repaintGrants(){for(const p of panels)updateForm(p);}
+  function repaintGrants(){updateHeader();for(const p of panels)updateForm(p);}
   async function refreshKodesGrant(v=revision){
     if(!user)return;
     try{
@@ -63,7 +63,7 @@
   const adminLink = node('a','Administration Center'); adminLink.href='/admin'; adminLink.hidden=true; account.after(adminLink);
   function paintLike(p) {
     const active = liked.has(p.slug);
-    p.like.textContent = active ? '♥ Liked — remove' : '♡ Like article';
+    p.like.textContent = active ? '♥ Curtido · desfazer' : '♡ Curtir artigo';
     p.like.setAttribute('aria-pressed', String(active));
     p.like.disabled = !ready || authError || p.likeBusy || Boolean(user && (!profile || !likesReady || likesError));
   }
@@ -105,19 +105,25 @@
   function accountLink(label) { const a = node('a',label); a.href='/account'; return a; }
   function updateHeader() {
     status.textContent = !ready ? 'Checking reader session…' : authError ? 'Unable to verify your account.' : user ? (profile ? 'Signed in as ' + profile.display_name : 'Signed in — complete your reader profile') : 'You are browsing as a guest.';
-    account.textContent = user ? 'My account' : 'Sign in / Create account'; logout.hidden = !user; adminLink.hidden = !staff || !ready || authError;
+    account.textContent = user ? 'Minha conta Viva' : 'Entrar na Viva'; logout.hidden = !user; adminLink.hidden = !staff || !ready || authError;
+    const identityStatus=$('kodes-reader-status');
+    if(identityStatus){
+      identityStatus.textContent=grantValid()?'Kodes-ID · N'+kodesGrant.level+' autorizado para comentar':'Kodes-ID · Identidade e participação';
+      identityStatus.classList.toggle('is-verified',grantValid());
+    }
   }
   function updateForm(p) {
     const canComment=ready&&user&&profile&&p.article?.comments_enabled&&!authError;
     p.form.hidden=!(canComment&&grantValid());
-    p.gateButton.hidden=!(canComment&&!grantValid());
+    p.gateButton.hidden=!(p.article?.comments_enabled&&!grantValid()&&ready&&!authError);
+    p.gateButton.textContent=!user?'Entrar para comentar':!profile?'Completar cadastro da Viva':'Continuar com Kodes-ID · N2';
     p.gateButton.disabled=kodesBusy;
     p.hint.replaceChildren();
     if (!ready) p.hint.textContent='Checking reader session…';
     else if (authError) p.hint.append('Unable to verify your account. ',accountLink('Open your account'));
     else if (!p.article) p.hint.textContent='Comments are currently unavailable for this article.';
     else if (!p.article.comments_enabled) p.hint.textContent='Comments are closed for this article.';
-    else if (!user) p.hint.append('Leitura livre. Para comentar, ',accountLink('entre na sua conta Viva Mídia'),' e confirme seu Kodes-ID N2.');
+    else if (!user) p.hint.append('Comentários assinados por nome e nível. ',accountLink('Entre com sua conta Viva Mídia'),' e confirme seu Kodes-ID para participar.');
     else if (!profile) p.hint.append(accountLink('Complete your reader profile'),' before commenting.');
     else if(!grantValid())p.hint.textContent='Para comentar ou responder, vincule seu Kodes-ID e confirme o nível N2. Seus comentários anteriores permanecem visíveis.';
     else p.hint.textContent='Kodes-ID N2 confirmado. Comentando como '+profile.display_name+'. '+(commentApprovalMode==='automatic'?'Publicação automática habilitada pela redação.':'Sujeito à aprovação editorial.');
@@ -268,6 +274,7 @@
         ?c.kodes_comment_signatures[0]:c.kodes_comment_signatures;
       const viewProfile=()=>openParticipantProfile(name,rows.filter(x=>x.user_id===c.user_id&&x.status==='approved').length,c.user_id,stamped);
       identity.onclick=viewProfile;
+      byline.append(identity);
       if(stamped&&Number.isInteger(stamped.level)&&stamped.level>=2){
         const badge=node('button',undefined,'reader-kodes-verified');
         badge.type='button';
@@ -277,7 +284,7 @@
         badge.onclick=viewProfile;
         byline.append(badge);
       }
-      byline.append(identity,node('span',' · '+new Date(c.created_at).toLocaleString('pt-BR'),'reader-comment-meta'));
+      byline.append(node('span',' · '+new Date(c.created_at).toLocaleString('pt-BR'),'reader-comment-meta'));
       card.append(byline);
       if(c.parent_id&&!index.has(c.parent_id))
         card.append(node('small','Resposta a um comentário não disponível nesta lista','reader-comment-depth'));
@@ -368,22 +375,36 @@
   for(const article of document.querySelectorAll('article[data-article-slug]')) {
     const like=node('button','♡ Like article');like.type='button';like.disabled=true;like.setAttribute('aria-pressed','false');
     const likeMessage=node('span','','reader-hint');likeMessage.setAttribute('role','status');
+    const kodesPanel=node('section',undefined,'kodes-article-identity');
+    kodesPanel.setAttribute('aria-label','Participação Kodes-ID neste artigo');
+    const eyebrow=node('span','K · KODES-ID','kodes-article-eyebrow');
+    const headline=node('strong','Sua identidade acompanha cada comentário.');
+    const description=node('p','Comentários identificados por nível Kodes-ID. A moderação segue as regras da Viva Mídia.');
+    const actions=node('div',undefined,'kodes-article-actions');
+    const openDiscussion=node('button','Comentar com Kodes-ID');openDiscussion.type='button';
+    openDiscussion.onclick=()=>{details.open=true;details.scrollIntoView({behavior:'smooth',block:'start'});};
+    const learn=node('a','Entenda os níveis Kodes-ID');
+    learn.href=KODES_ORIGIN+'/participar?site=7554902f-4506-494e-8f69-50e4cef8e767&intent=identity';
+    learn.target='_blank';learn.rel='noopener noreferrer';
+    actions.append(openDiscussion,learn);
+    kodesPanel.append(eyebrow,headline,description,actions);
+    article.append(kodesPanel);
     const likeRow=node('div',undefined,'reader-discussion');likeRow.append(like,likeMessage);article.append(likeRow);
     const details=node('details',undefined,'reader-discussion');
-    const summary=node('summary','Comments / Join the discussion');
-    const hint=node('p','Open to view comments.','reader-hint');
-    const list=node('div');const refresh=node('button','Refresh comments');refresh.type='button';
-    const gateButton=node('button','Ativar meu Kodes-ID para comentar','reader-primary');
+    const summary=node('summary','Comentários · Participe da discussão');
+    const hint=node('p','Somente participantes com credencial Kodes-ID N2 ou superior podem comentar.','reader-hint');
+    const list=node('div');const refresh=node('button','Atualizar comentários');refresh.type='button';
+    const gateButton=node('button','Continuar com Kodes-ID','reader-primary');
     gateButton.type='button';gateButton.hidden=true;
     const formHome=node('div',undefined,'reader-compose-home');
     const form=node('form');form.hidden=true;
     const replyInfo=node('div');replyInfo.hidden=true;const replyText=node('span');const cancel=node('button','Cancel reply');cancel.type='button';replyInfo.append(replyText,cancel);
-    const label=node('label','Your comment');const input=node('textarea');input.required=true;input.maxLength=3000;input.rows=4;input.placeholder='Share your thoughts…';label.append(input);
-    const submit=node('button','Submit comment','reader-primary');submit.type='submit';
+    const label=node('label','Seu comentário');const input=node('textarea');input.required=true;input.maxLength=3000;input.rows=4;input.placeholder='Share your thoughts…';label.append(input);
+    const submit=node('button','Publicar comentário','reader-primary');submit.type='submit';
     const message=node('p',undefined,'reader-hint');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
     form.append(replyInfo,label,submit);formHome.append(form);details.append(summary,hint,list,refresh,gateButton,formHome,message);article.append(details);
     const p={like,likeMessage,likeBusy:false,details,hint,list,form,gateButton,input,replyInfo,replyText,formHome,slug:article.dataset.articleSlug,article:null,parent:null,request:0,busy:false};panels.push(p);like.onclick=()=>toggleLike(p);
-    gateButton.onclick=()=>authorizeKodes();
+    gateButton.onclick=()=>{if(!user||!profile){location.assign('/account');return;}authorizeKodes();};
     cancel.onclick=()=>clearReply(p);refresh.onclick=()=>load(p);details.addEventListener('toggle',()=>{if(details.open && ready)load(p);});
     form.addEventListener('submit',async e=>{
       e.preventDefault();

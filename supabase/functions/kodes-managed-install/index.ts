@@ -31,6 +31,13 @@ Deno.serve(async req=>{
  try{const str=await req.text();if(str.length>700)return reply({error:'Request too large'},413);
      payload=JSON.parse(str);if(!payload||typeof payload!=='object'||Array.isArray(payload))throw Error()}
  catch{return reply({error:'Invalid request'},400)}
+ if(payload.action==='preflight'){
+   if(payload.site!==SITE)return reply({ready:false,error:'Invalid website'},400);
+   const {data:installed,error:lookup}=await db.from('kodes_managed_server_connectors')
+     .select('activated_at').eq('public_site_id',SITE).maybeSingle();
+   if(lookup)return reply({ready:false,error:'Instalação do conector ainda não disponível no banco da Viva Mídia'},503);
+   return reply({ready:true,activated:!!installed?.activated_at,manual_keys_required:false},200);
+ }
  if(payload.site!==SITE||typeof payload.token!=='string'||
     !/^[a-f0-9]{64}$/.test(payload.token)||payload.confirm!==true)
     return reply({error:'Expired activation or missing explicit approval'},400);

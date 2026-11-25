@@ -119,21 +119,131 @@
     // Preserve drafts and reply targets during Kodes-ID authorization.
     if(!canComment)clearReply(p);
   }
-  function clearReply(p) { p.parent=null; p.replyInfo.hidden=true; p.replyText.textContent=''; }
+  function clearReply(p) { p.parent=null; p.replyInfo.hidden=true; p.replyText.textContent=''; restoreCommentForm(p); }
+  // A reply is a child of its parent, not another top-level comment.
+  // Existing parent_id values remain untouched; only the presentation changes.
+  const threadedStyle=document.createElement('style');
+  threadedStyle.textContent=[
+    '.reader-comment{min-width:0}',
+    '.reader-comment-thread{margin:8px 0 14px}',
+    '.reader-thread-children{margin:8px 0 0 17px;padding:0 0 0 12px;border-left:2px solid var(--accent,#ff6204)}',
+    '.reader-thread-children>.reader-comment-thread{margin:8px 0}',
+    '.reader-comment-depth{font:600 11px/1.3 system-ui,sans-serif;color:var(--mute,#777)}',
+    '.reader-comment-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 3px}',
+    '.reader-comment-author{cursor:pointer;background:transparent;border:none;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px;font:inherit;font-weight:700}',
+    '.reader-reply-compose{margin:9px 0 10px;padding:12px;border-radius:10px;border:1px solid var(--line,#ddd);background:var(--card,#fff)}',
+    '.reader-kodes-profile-backdrop{position:fixed;z-index:2147482500;inset:0;display:grid;place-items:center;background:#17221dcc;padding:14px}',
+    '.reader-kodes-profile-panel{width:min(400px,100%);max-height:85vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:16px;padding:24px;box-shadow:0 24px 60px #0003;font:14px/1.6 system-ui,sans-serif}',
+    '.reader-kodes-profile-panel h3{margin:0 0 8px;font-size:22px;line-height:1.25}',
+    '.reader-kodes-profile-panel button{margin-top:10px;border:1px solid var(--line,#ddd);background:transparent;padding:8px 15px;border-radius:8px;cursor:pointer}',
+    '@media(max-width:480px){.reader-thread-children{margin-left:7px;padding-left:9px}}'
+  ].join('');
+  document.head.append(threadedStyle);
+
+  function openParticipantProfile(name,visibleCount){
+    // A portal-only account must not be misrepresented as Kodes verified.
+    // A future consented Kodes public profile resolver may replace this
+    // placeholder once a link is validated server-side.
+    const backdrop=node('div',undefined,'reader-kodes-profile-backdrop');
+    const dialog=node('section',undefined,'reader-kodes-profile-panel');
+    dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');
+    const title=node('h3',name);title.id='reader-profile-title-'+Math.random().toString(36).slice(2);
+    dialog.setAttribute('aria-labelledby',title.id);
+    const close=node('button','Fechar');close.type='button';
+    const stop=e=>{if(e.key==='Escape')dismiss();};
+    const dismiss=()=>{backdrop.remove();document.removeEventListener('keydown',stop);};
+    close.onclick=dismiss;backdrop.onclick=e=>{if(e.target===backdrop)dismiss()};
+    dialog.append(title,
+      node('p','Perfil público do participante neste portal.','reader-comment-meta'),
+      node('p',visibleCount+' comentário(s) visível(is) nesta lista de discussão.'),
+      node('p','Credencial pública Kodes-ID: ainda não vinculada e autorizada para exibição.','reader-comment-meta'),
+      close);
+    backdrop.append(dialog);document.body.append(backdrop);
+    document.addEventListener('keydown',stop);
+    close.focus();
+  }
   function showComments(p, rows) {
     p.list.replaceChildren();
-    if (!rows.length) p.list.append(node('p','No comments yet. Be the first to join the discussion.'));
-    for (const c of rows) {
+    p.commentCards=new Map();
+    if(!rows.length) {
+      p.list.append(node('p','Ainda não há comentários. Inicie a discussão.'));
+      restoreCommentForm(p);
+      return;
+    }
+    const index=new Map(rows.map(c=>[c.id,{comment:c,children:[]}]));
+    const roots=[];
+    for(const c of rows){
+      const entry=index.get(c.id);
+      const parent=c.parent_id&&index.get(c.parent_id);
+      // Missing parents can occur with a paginated result or a moderated
+      // hidden parent. Never discard the reply or invent the missing content.
+      if(parent&&parent!==entry)parent.children.push(entry);
+      else roots.push(entry);
+    }
+    roots.sort((a,b)=>b.comment.created_at.localeCompare(a.comment.created_at));
+    for(const record of index.values())
+      record.children.sort((a,b)=>a.comment.created_at.localeCompare(b.comment.created_at));
+    const visited=new Set();
+    const render=(entry,depth=0)=>{
+      if(visited.has(entry.comment.id))return null; // handles inconsistent cycles
+      visited.add(entry.comment.id);
+      const c=entry.comment;
+      const holder=node('div',undefined,'reader-comment-thread');
       const card=node('div',undefined,'reader-comment');
-      const name=c.profiles?.display_name || 'Reader';
-      card.append(node('strong',name),node('span',' · '+new Date(c.created_at).toLocaleString(),'reader-comment-meta'));
-      if (c.parent_id) card.append(node('small','Reply to another comment','reader-comment-meta'));
-      if (c.status !== 'approved') card.append(node('small',c.status === 'pending' ? 'Awaiting moderation — visible only to you and administrators' : 'Not published ('+c.status+')','reader-comment-meta'));
+      card.dataset.commentId=c.id;
+      const name=c.profiles?.display_name||'Leitor';
+      const byline=node('div',undefined,'reader-comment-byline');
+      const identity=node('button',name,'reader-comment-author');
+      identity.type='button';
+      identity.setAttribute('aria-label','Abrir perfil do participante '+name);
+      identity.onclick=()=>openParticipantProfile(name,rows.filter(x=>x.user_id===c.user_id&&x.status==='approved').length);
+      byline.append(identity,node('span',' · '+new Date(c.created_at).toLocaleString('pt-BR'),'reader-comment-meta'));
+      card.append(byline);
+      if(c.parent_id&&!index.has(c.parent_id))
+        card.append(node('small','Resposta a um comentário não disponível nesta lista','reader-comment-depth'));
+      if(c.status!=='approved')
+        card.append(node('small',c.status==='pending'
+          ?'Aguardando moderação — visível apenas para você e administradores'
+          :'Não publicado ('+c.status+')','reader-comment-meta'));
       card.append(node('p',c.content,'reader-comment-content'));
-      if (user && profile && p.article.comments_enabled && c.status==='approved' && !authError) {
-        const b=node('button','Reply'); b.type='button'; b.onclick=()=>{if(!grantValid()){authorizeKodes();return;}p.parent=c.id;p.replyInfo.hidden=false;p.replyText.textContent='Replying to '+name;p.input.focus();}; card.append(b);
+      if(user&&profile&&p.article.comments_enabled&&c.status==='approved'&&!authError){
+        const actions=node('div',undefined,'reader-comment-actions');
+        const reply=node('button','Responder');reply.type='button';
+        reply.onclick=()=>{
+          p.parent=c.id;
+          p.replyInfo.hidden=false;
+          p.replyText.textContent='Respondendo a '+name;
+          p.form.classList.add('reader-reply-compose');
+          holder.append(p.form);
+          if(!grantValid())authorizeKodes();
+          else p.input.focus();
+        };
+        actions.append(reply);card.append(actions);
       }
-      p.list.append(card);
+      holder.append(card);
+      p.commentCards.set(c.id,holder);
+      if(entry.children.length){
+        const replies=node('div',undefined,'reader-thread-children');
+        for(const child of entry.children){const element=render(child,depth+1);if(element)replies.append(element)}
+        if(replies.childNodes.length)holder.append(replies);
+      }
+      return holder;
+    };
+    for(const root of roots){const element=render(root);if(element)p.list.append(element)}
+    // Defensive fallback for malformed cycles: keep historic comments visible.
+    for(const entry of index.values())if(!visited.has(entry.comment.id)){
+      const element=render(entry);if(element)p.list.append(element);
+    }
+    restoreCommentForm(p);
+  }
+  function restoreCommentForm(p){
+    if(!p.formHome)return;
+    const target=p.parent&&p.commentCards?.get(p.parent);
+    if(target){p.form.classList.add('reader-reply-compose');target.append(p.form);}
+    else{
+      if(p.parent){p.parent=null;p.replyInfo.hidden=true;p.replyText.textContent='';}
+      p.form.classList.remove('reader-reply-compose');
+      p.formHome.append(p.form);
     }
   }
   async function load(p) {
@@ -148,11 +258,11 @@
       p.article=article.data; updateForm(p);
       let q=db.from('comments').select('id,parent_id,user_id,content,status,created_at,profiles(display_name)').eq('article_id',p.article.id);
       q=user?q.or('status.eq.approved,user_id.eq.'+user.id):q.eq('status','approved');
-      const {data,error}=await q.order('created_at',{ascending:false}).limit(100);
+      const {data,error}=await q.order('created_at',{ascending:false}).limit(300);
       if(request!==p.request || authRev!==revision) return;
       if(error) throw error;
       showComments(p,data || []);
-      if(data?.length===100) p.list.append(node('small','Showing the latest 100 visible comments.'));
+      if(data?.length===300) p.list.append(node('small','Exibindo os 300 comentários visíveis mais recentes; algumas respostas antigas podem não aparecer.'));
     } catch(e) { if(request!==p.request || authRev!==revision)return; p.article=null;updateForm(p);p.list.replaceChildren(node('p','Unable to load comments. Use Refresh comments to try again.')); }
   }
   async function updateSession(session) {
@@ -185,13 +295,14 @@
     const list=node('div');const refresh=node('button','Refresh comments');refresh.type='button';
     const gateButton=node('button','Ativar meu Kodes-ID para comentar','reader-primary');
     gateButton.type='button';gateButton.hidden=true;
+    const formHome=node('div',undefined,'reader-compose-home');
     const form=node('form');form.hidden=true;
     const replyInfo=node('div');replyInfo.hidden=true;const replyText=node('span');const cancel=node('button','Cancel reply');cancel.type='button';replyInfo.append(replyText,cancel);
     const label=node('label','Your comment');const input=node('textarea');input.required=true;input.maxLength=3000;input.rows=4;input.placeholder='Share your thoughts…';label.append(input);
     const submit=node('button','Submit comment','reader-primary');submit.type='submit';
     const message=node('p',undefined,'reader-hint');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
-    form.append(replyInfo,label,submit);details.append(summary,hint,list,refresh,gateButton,form,message);article.append(details);
-    const p={like,likeMessage,likeBusy:false,details,hint,list,form,gateButton,input,replyInfo,replyText,slug:article.dataset.articleSlug,article:null,parent:null,request:0,busy:false};panels.push(p);like.onclick=()=>toggleLike(p);
+    form.append(replyInfo,label,submit);formHome.append(form);details.append(summary,hint,list,refresh,gateButton,formHome,message);article.append(details);
+    const p={like,likeMessage,likeBusy:false,details,hint,list,form,gateButton,input,replyInfo,replyText,formHome,slug:article.dataset.articleSlug,article:null,parent:null,request:0,busy:false};panels.push(p);like.onclick=()=>toggleLike(p);
     gateButton.onclick=()=>authorizeKodes();
     cancel.onclick=()=>clearReply(p);refresh.onclick=()=>load(p);details.addEventListener('toggle',()=>{if(details.open && ready)load(p);});
     form.addEventListener('submit',async e=>{

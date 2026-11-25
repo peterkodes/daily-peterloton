@@ -1041,6 +1041,7 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2"></script>
 <script src="/reader-comments.js" defer></script>
+<script defer src="https://app.kodes.com.br/kodes-embed/author-v1.js" data-kodes-site="7554902f-4506-494e-8f69-50e4cef8e767" data-kodes-api="https://marwnbmablxzziyvhxof.supabase.co/functions/v1/kodes-public-authors"></script>
 
 
 <script id="kodes-editorial-experience">
@@ -1087,13 +1088,20 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
     counts.get(author).count++;
     const byline=article.querySelector('.byline');
     if(byline && !byline.querySelector('.kodes-public-authorship')){
-      const authorLabel=$('span','kodes-public-authorship','Editorial: '+author+' · persona de IA');
+      const authorLabel=$('a','kodes-public-authorship','Editorial: '+author+' · persona de IA');
+      authorLabel.href='/author.html?author='+encodeURIComponent('name:'+author.toLocaleLowerCase('pt-BR'));
       byline.append(authorLabel);
+      // The Kodes widget is opt-in, isolated, and never grants a human N-level
+      // to the synthetic editorial names in this pilot.
+      const authorMount=$('span');authorMount.dataset.kodesAuthor='name:'+author.toLocaleLowerCase('pt-BR');
+      authorMount.className='kodes-public-author-credential';
+      byline.append(authorMount);
     }
   }
   const list=$('ol','kodes-author-list');
   for(const [name, data] of [...counts].sort((a,b)=>b[1].count-a[1].count)){
-    const li=$('li');const a=$('a','',name);a.href='#'+data.first.id;
+    const li=$('li');const a=$('a','',name);
+    a.href='/author.html?author='+encodeURIComponent('name:'+name.toLocaleLowerCase('pt-BR'));
     li.append(a,$('em','',String(data.count)+' notícias'));list.append(li);
   }
   authors.append(list);

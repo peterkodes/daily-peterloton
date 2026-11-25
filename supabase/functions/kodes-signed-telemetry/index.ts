@@ -1,6 +1,6 @@
 // Viva Midia signed telemetry adapter for Kodes Connect. No private key in browser.
-// Provision KODES_SIGNING_PRIVATE_KEY_PKCS8 and KODES_SIGNING_KEY_ID as Edge secrets,
-// register matching public Ed25519 key in Kodes, then schedule a trusted daily POST.
+// Signing material is provisioned automatically via the Viva managed setup and
+// read server-side from Vault. Environment secrets are legacy fallback only.
 import {createClient} from 'https://esm.sh/@supabase/supabase-js@2.57.0';
 const KODES='https://marwnbmablxzziyvhxof.supabase.co/functions/v1';
 const VIVA=['https://www.vivamidia.com.br','https://vivamidia.com.br'];
@@ -43,10 +43,15 @@ Deno.serve(async request=>{
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!Number.isFinite(start)||
    new Date(start).toISOString().slice(0,10)!==date||start>Date.now()||start<Date.now()-365*86400000)
    return response({error:'Date must be past UTC day within the last year'},400,origin);
- const keyId=Deno.env.get('KODES_SIGNING_KEY_ID');
- const encoded=Deno.env.get('KODES_SIGNING_PRIVATE_KEY_PKCS8');
+ const {data:managed,error:managedError}=await db.rpc('kodes_viva_get_managed_signer',{
+   p_site_id:'7554902f-4506-494e-8f69-50e4cef8e767',
+ });
+ if(managedError)return response({error:'Unable to read managed connector state'},503,origin);
+ const signer=Array.isArray(managed)?managed[0]:null;
+ const keyId=signer?.signing_key_id||Deno.env.get('KODES_SIGNING_KEY_ID');
+ const encoded=signer?.private_key_pkcs8||Deno.env.get('KODES_SIGNING_PRIVATE_KEY_PKCS8');
  if(!keyId||!encoded||!/^[0-9a-f-]{36}$/i.test(keyId))
-   return response({error:'Signer not provisioned; no reports sent'},503,origin);
+   return response({error:'Automatic connector not activated; no metrics sent'},503,origin);
  let privateKey:CryptoKey;
  try{privateKey=await crypto.subtle.importKey('pkcs8',bin(encoded),{name:'Ed25519'},false,['sign'])}
  catch{return response({error:'Signer configuration invalid'},503,origin)}

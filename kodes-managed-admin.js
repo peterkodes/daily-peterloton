@@ -37,7 +37,17 @@
     });
     if(readiness.error||readiness.data?.ready!==true){
       eligible=false;
-      status.textContent='O conector ainda não foi provisionado no servidor do portal. A ativação permanece indisponível até concluir a instalação protegida no banco.';
+      let detail=readiness.data?.error;
+      if(!detail&&readiness.error?.context instanceof Response){
+        try{
+          const payload=await readiness.error.context.clone().json();
+          if(typeof payload?.error==='string')detail=payload.error;
+        }catch{/* The request failed before a JSON response. */}
+      }
+      const explanation=typeof detail==='string'&&detail.length<320
+        ?detail:'Não foi possível validar o conector no servidor Viva Mídia.';
+      status.textContent=explanation+' Nenhuma chave foi criada; tente novamente após a correção.';
+      report('kodes:managed-error',explanation);
       return;
     }
     if(readiness.data?.activated===true){
@@ -68,7 +78,17 @@
         body:{site:SITE,token:installationToken,confirm:true}
       });
       installationToken='';
-      if(error||!data?.activated)throw Error(data?.error||'Falha na ativação. O painel continua disponível.');
+      if(error||!data?.activated){
+        let detail=data?.error;
+        if(!detail&&error?.context instanceof Response){
+          try{
+            const payload=await error.context.clone().json();
+            if(typeof payload?.error==='string')detail=payload.error;
+          }catch{/* No response body was available. */}
+        }
+        throw Error(typeof detail==='string'&&detail.length<320
+          ?detail:'A instalação não foi confirmada pelo servidor Viva Mídia.');
+      }
       completed=true;status.textContent='Conexão de servidor ativada com segurança. Os testes de comentários e telemetria serão verificados separadamente.';
       report('kodes:managed-complete');
     }catch(e){

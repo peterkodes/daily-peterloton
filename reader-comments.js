@@ -274,6 +274,7 @@
         ?c.kodes_comment_signatures[0]:c.kodes_comment_signatures;
       const viewProfile=()=>openParticipantProfile(name,rows.filter(x=>x.user_id===c.user_id&&x.status==='approved').length,c.user_id,stamped);
       identity.onclick=viewProfile;
+      byline.append(identity);
       if(stamped&&Number.isInteger(stamped.level)&&stamped.level>=2){
         const badge=node('button',undefined,'reader-kodes-verified');
         badge.type='button';
@@ -283,7 +284,7 @@
         badge.onclick=viewProfile;
         byline.append(badge);
       }
-      byline.append(identity,node('span',' · '+new Date(c.created_at).toLocaleString('pt-BR'),'reader-comment-meta'));
+      byline.append(node('span',' · '+new Date(c.created_at).toLocaleString('pt-BR'),'reader-comment-meta'));
       card.append(byline);
       if(c.parent_id&&!index.has(c.parent_id))
         card.append(node('small','Resposta a um comentário não disponível nesta lista','reader-comment-depth'));

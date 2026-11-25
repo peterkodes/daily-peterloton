@@ -35,6 +35,9 @@
     report('kodes:managed-ready');
   }
   window.addEventListener('message',event=>{
+    if(event.origin===APP&&event.source===window.opener&&eligible&&event.data?.type==='kodes:managed-ping'&&event.data?.site===SITE){
+      report('kodes:managed-ready');return;
+    }
     if(event.origin!==APP||event.source!==window.opener||!eligible||
       event.data?.type!=='kodes:managed-authorization'||event.data?.site!==SITE||
       typeof event.data.token!=='string'||!/^[a-f0-9]{64}$/.test(event.data.token))return;

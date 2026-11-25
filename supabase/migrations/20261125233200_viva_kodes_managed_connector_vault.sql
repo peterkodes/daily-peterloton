@@ -105,3 +105,23 @@ revoke all on function public.kodes_viva_verify_managed_scheduler(text)
  from public,anon,authenticated;
 grant execute on function public.kodes_viva_verify_managed_scheduler(text)
  to service_role;
+
+-- Recovery of interrupted automatic setup. Does not expose key material to
+-- authenticated/anon/Data API. The Edge installer can retry with the same
+-- private key without generating another one or losing the Vault secret.
+create or replace function public.kodes_viva_get_pending_managed_signer(p_site_id uuid)
+returns table(public_key text,private_key_pkcs8 text,installed_by uuid)
+language plpgsql security definer set search_path='' as $$
+begin
+ if current_setting('request.jwt.claim.role',true) is distinct from 'service_role'
+ then raise exception 'Backend only';end if;
+ return query
+ select c.public_key,v.decrypted_secret,c.installed_by
+ from public.kodes_managed_server_connectors c
+ join vault.decrypted_secrets v on v.id=c.vault_secret_id
+ where c.public_site_id=p_site_id and c.activated_at is null
+   and c.kodes_key_id is null;
+end; $$;
+revoke all on function public.kodes_viva_get_pending_managed_signer(uuid)
+ from public,anon,authenticated;
+grant execute on function public.kodes_viva_get_pending_managed_signer(uuid) to service_role;

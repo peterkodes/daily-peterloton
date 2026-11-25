@@ -29,6 +29,62 @@
     }catch{if(v===revision)kodesGrant=null;}
     if(v===revision)repaintGrants();
   }
+  function kodesIdentityDialog(recognized=false){
+    const old=document.querySelector('.viva-kodes-auth-backdrop');
+    if(old)old.remove();
+    const backdrop=node('div',undefined,'viva-kodes-auth-backdrop');
+    const panel=node('section',undefined,'viva-kodes-auth-panel');
+    panel.setAttribute('role','dialog');
+    panel.setAttribute('aria-modal','true');
+    const title=node('h2',recognized?'Credencial reconhecida.':'Para comentar na Viva Mídia');
+    title.id='viva-kodes-dialog-title';
+    panel.setAttribute('aria-labelledby',title.id);
+    const logo=node('div','K · KODES-ID   |   VIVA MÍDIA','viva-kodes-auth-brand');
+    const step=node('small',recognized?'CREDENCIAL VALIDADA':'PASSO 1 DE 2 · SUA IDENTIDADE','viva-kodes-auth-step');
+    const intro=node('p',recognized
+      ?'O servidor reconheceu sua autorização para participar das discussões deste portal.'
+      :'Os comentários são assinados por nome e nível. Entre na Viva Mídia e confirme seu Kodes-ID, sem criar contas duplicadas.');
+    const actions=node('div',undefined,'viva-kodes-auth-actions');
+    const close=node('button','Fechar');
+    close.type='button';close.className='viva-kodes-auth-close';
+    let alive=true;
+    const key=e=>{if(e.key==='Escape')dismiss();};
+    function dismiss(){
+      if(!alive)return;alive=false;backdrop.remove();document.removeEventListener('keydown',key);
+    }
+    close.onclick=dismiss;backdrop.onclick=e=>{if(e.target===backdrop)dismiss();};
+    panel.append(logo,step,title,intro);
+    if(recognized&&grantValid()){
+      const card=node('div',undefined,'viva-kodes-auth-credential');
+      card.append(node('small','KODES-ID · AUTORIZAÇÃO DE COMENTÁRIOS'),
+        node('strong','N'+kodesGrant.level),
+        node('p','Comentarista · Acesso autorizado neste portal'),
+        node('small','Ativa nesta sessão de autorização. Não comprova identidade civil, profissão ou especialidade.'));
+      panel.append(card);
+      const action=node('button','Voltar ao artigo e comentar');
+      action.type='button';action.className='viva-kodes-auth-primary';
+      action.onclick=()=>{
+        dismiss();
+        const visible=panels.find(p=>p.details.open);
+        if(visible)visible.input.focus();
+      };
+      actions.append(action);
+    }else{
+      const action=node('button',user&&profile?'Continuar com Kodes-ID':'Entrar na Viva Mídia');
+      action.type='button';action.className='viva-kodes-auth-primary';
+      action.onclick=()=>{
+        dismiss();
+        if(!user||!profile)location.assign('/account');
+        else authorizeKodes();
+      };
+      actions.append(action);
+      panel.append(node('small',user&&profile
+       ?'Sua conta Viva Mídia está autenticada. O Kodes verificará sua credencial no próximo passo.'
+       :'Leitura livre. Para comentar, primeiro confirme sua conta no portal.'));
+    }
+    actions.append(close);panel.append(actions);backdrop.append(panel);
+    document.body.append(backdrop);document.addEventListener('keydown',key);close.focus();
+  }
   function authorizeKodes(){
     if(!ready||authError||!user||!profile||kodesBusy)return;
     if(!['https://vivamidia.com.br','https://www.vivamidia.com.br'].includes(location.origin))return;
@@ -54,6 +110,7 @@
       kodesPopup?.close();kodesPopup=null;
       repaintGrants();
       for(const p of panels)if(p.details.open)p.input.focus();
+      kodesIdentityDialog(true);
     }catch{
       kodesGrant=null;repaintGrants();
       for(const p of panels)if(p.details.open)p.hint.textContent='Não foi possível validar seu Kodes-ID. Clique novamente em Ativar Kodes-ID.';
@@ -154,6 +211,20 @@
     '.reader-kodes-credential-summary p{margin:6px 0;font-size:12px}',
     '.reader-kodes-credential-summary small{font-size:11px;color:#4c5b70}',
     '.reader-kodes-profile-panel button{margin-top:10px;border:1px solid var(--line,#ddd);background:transparent;padding:8px 15px;border-radius:8px;cursor:pointer}',
+    '.viva-kodes-auth-backdrop{position:fixed;z-index:2147483000;inset:0;background:rgba(12,18,34,.65);display:grid;place-items:center;padding:16px}',
+    '.viva-kodes-auth-panel{background:#fff;color:#161b21;width:min(490px,100%);max-height:85vh;overflow:auto;border-radius:17px;border-top:4px solid #ff6204;padding:25px;box-shadow:0 25px 70px #0004;font:14px/1.6 system-ui,sans-serif}',
+    '.viva-kodes-auth-brand{font-weight:850;letter-spacing:.05em;color:#14264c;border-bottom:1px solid #e4e4e4;padding-bottom:14px;margin-bottom:19px}',
+    '.viva-kodes-auth-step{color:#e85d0a;font-weight:900;letter-spacing:.09em}',
+    '.viva-kodes-auth-panel h2{font-size:23px;line-height:1.2;margin:11px 0}',
+    '.viva-kodes-auth-panel p{color:#57616d}',
+    '.viva-kodes-auth-credential{background:#141414;color:#fff;border-radius:16px;margin:18px 0;padding:20px;display:flex;flex-direction:column;gap:6px}',
+    '.viva-kodes-auth-credential strong{font:800 58px/1 Georgia,serif;color:#ff6204}',
+    '.viva-kodes-auth-credential p{color:#f4f4f4;margin:0}',
+    '.viva-kodes-auth-credential small{color:#bcbcbc}',
+    '.viva-kodes-auth-actions{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:20px}',
+    '.viva-kodes-auth-actions button{padding:11px 15px;border-radius:9px;cursor:pointer}',
+    '.viva-kodes-auth-primary{background:#111!important;color:#fff!important;border:1px solid #111!important;font-weight:800}',
+    '.viva-kodes-auth-close{background:#fff!important;border:1px solid #ccc!important}',
     '@media(max-width:480px){.reader-thread-children{margin-left:7px;padding-left:9px}}'
   ].join('');
   document.head.append(threadedStyle);
@@ -404,7 +475,7 @@
     const message=node('p',undefined,'reader-hint');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
     form.append(replyInfo,label,submit);formHome.append(form);details.append(summary,hint,list,refresh,gateButton,formHome,message);article.append(details);
     const p={like,likeMessage,likeBusy:false,details,hint,list,form,gateButton,input,replyInfo,replyText,formHome,slug:article.dataset.articleSlug,article:null,parent:null,request:0,busy:false};panels.push(p);like.onclick=()=>toggleLike(p);
-    gateButton.onclick=()=>{if(!user||!profile){location.assign('/account');return;}authorizeKodes();};
+    gateButton.onclick=()=>kodesIdentityDialog(false);
     cancel.onclick=()=>clearReply(p);refresh.onclick=()=>load(p);details.addEventListener('toggle',()=>{if(details.open && ready)load(p);});
     form.addEventListener('submit',async e=>{
       e.preventDefault();

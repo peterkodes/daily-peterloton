@@ -37,21 +37,38 @@ Deno.serve(async req=>{
  const {data:existing,error:oldError}=await db.from('kodes_managed_server_connectors')
    .select('activated_at').eq('public_site_id',SITE).maybeSingle();
  if(oldError)return reply({error:'Connector state unavailable'},503);
- if(existing)return reply({error:existing.activated_at?'This website is already connected':'Incomplete installation needs administrator review'},409);
- // generateKey requires extractable=true only long enough to store PKCS8 in Vault.
- // No key is ever returned to the browser or logged.
- let generated:CryptoKeyPair;
- try{generated=await crypto.subtle.generateKey({name:'Ed25519'},true,['sign','verify']) as CryptoKeyPair}
- catch{return reply({error:'Secure key generation unavailable'},503)}
- const rawPublic=new Uint8Array(await crypto.subtle.exportKey('raw',generated.publicKey));
- const rawPrivate=new Uint8Array(await crypto.subtle.exportKey('pkcs8',generated.privateKey));
- const publicKey=b64(rawPublic),privateKey=b64(rawPrivate);
- const cronSecret=[...crypto.getRandomValues(new Uint8Array(32))]
-   .map(x=>x.toString(16).padStart(2,'0')).join('');
- const {error:stored}=await db.rpc('kodes_viva_store_managed_signing_key',{
-    p_site_id:SITE,p_public_key:publicKey,p_private_key:privateKey,
-    p_cron_secret:cronSecret,p_installed_by:session.user.id});
- if(stored)return reply({error:'Unable to store private key securely in Viva Vault'},503);
+ if(existing?.activated_at)return reply({error:'This website is already connected'},409);
+ // A previous Kodes API timeout may have left a pending key in Viva Vault.
+ // Reuse its original public/private pair instead of orphaning another key.
+ let publicKey:string;
+ let freshInstall=false;
+ if(existing){
+   const {data:pending,error:recoveryError}=await db.rpc('kodes_viva_get_pending_managed_signer',{
+     p_site_id:SITE,
+   });
+   if(recoveryError||!Array.isArray(pending)||pending.length!==1||
+      !/^[A-Za-z0-9_-]{43}$/.test(pending[0].public_key)||
+      !pending[0].private_key_pkcs8)
+     return reply({error:'Pending installation cannot be recovered securely'},503);
+   publicKey=pending[0].public_key;
+ }else{
+   // Keys are generated exclusively in this authenticated server-side Edge function.
+   // No signing key, plaintext secret or service_role credential goes to the browser.
+   let generated:CryptoKeyPair;
+   try{generated=await crypto.subtle.generateKey({name:'Ed25519'},true,['sign','verify']) as CryptoKeyPair}
+   catch{return reply({error:'Secure key generation unavailable'},503)}
+   const rawPublic=new Uint8Array(await crypto.subtle.exportKey('raw',generated.publicKey));
+   const rawPrivate=new Uint8Array(await crypto.subtle.exportKey('pkcs8',generated.privateKey));
+   publicKey=b64(rawPublic);
+   const privateKey=b64(rawPrivate);
+   const cronSecret=[...crypto.getRandomValues(new Uint8Array(32))]
+      .map(x=>x.toString(16).padStart(2,'0')).join('');
+   const {error:stored}=await db.rpc('kodes_viva_store_managed_signing_key',{
+      p_site_id:SITE,p_public_key:publicKey,p_private_key:privateKey,
+      p_cron_secret:cronSecret,p_installed_by:session.user.id});
+   if(stored)return reply({error:'Unable to store private key securely in Viva Vault'},503);
+   freshInstall=true;
+ }
  let result:Response;
  try{result=await fetch(KODES,{method:'POST',headers:{'content-type':'application/json'},
     body:JSON.stringify({action:'complete',site:SITE,token:payload.token,public_key:publicKey})})}
@@ -75,6 +92,6 @@ Deno.serve(async req=>{
    });
    firstReport=report.ok;
  }catch{/* scheduler retries independently */}
- return reply({activated:true,site:SITE,initial_report_accepted:firstReport,
+ return reply({activated:true,site:SITE,recovered_previous_attempt:!freshInstall,initial_report_accepted:firstReport,
    message:'Server credentials provisioned. Comment authorization requires separate end-to-end validation.'});
 });

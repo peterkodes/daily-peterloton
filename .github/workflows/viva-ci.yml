@@ -19,6 +19,8 @@ jobs:
         run: |
           node --check reader-comments.js
           node --check admin.js
+      - name: Validate Vértice identity integration surfaces
+        run: node scripts/check-vertice-contract.mjs
       - name: Validate public pilot contract
         run: |
           node --input-type=module <<'EOF'

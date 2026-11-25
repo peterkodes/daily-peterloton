@@ -1041,6 +1041,7 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2"></script>
 <script src="/reader-comments.js" defer></script>
+<script defer src="https://app.kodes.com.br/kodes-embed/author-v1.js" data-kodes-site="7554902f-4506-494e-8f69-50e4cef8e767" data-kodes-api="https://marwnbmablxzziyvhxof.supabase.co/functions/v1/kodes-public-authors"></script>
 
 
 <script id="kodes-editorial-experience">
@@ -1089,6 +1090,11 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
     if(byline && !byline.querySelector('.kodes-public-authorship')){
       const authorLabel=$('span','kodes-public-authorship','Editorial: '+author+' · persona de IA');
       byline.append(authorLabel);
+      // The Kodes widget is opt-in, isolated, and never grants a human N-level
+      // to the synthetic editorial names in this pilot.
+      const authorMount=$('span');authorMount.dataset.kodesAuthor='name:'+author.toLocaleLowerCase('pt-BR');
+      authorMount.className='kodes-public-author-credential';
+      byline.append(authorMount);
     }
   }
   const list=$('ol','kodes-author-list');

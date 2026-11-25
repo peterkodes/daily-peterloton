@@ -13,6 +13,7 @@
   if (!window.supabase?.createClient) { status.textContent = 'Reader service unavailable. Reload to try again.'; return; }
   const db = window.supabase.createClient('https://jyjrgdoeuzlvvpkymqsu.supabase.co', 'sb_publishable_suBMv7WnrejReyIswL19jw_ipsMz5Gr');
   const liked = new Map();
+  const saved = new Map();
   // Commenting needs a server-issued, short-lived N2 Kodes-ID grant.
   // Reading all historic comments remains free.
   let kodesGrant=null,kodesBusy=false,kodesPopup=null,kodesState='';
@@ -118,46 +119,109 @@
   });
   let likesReady = false, likesError = false, staff = false;
   const adminLink = node('a','Administration Center'); adminLink.href='/admin'; adminLink.hidden=true; account.after(adminLink);
-  function paintLike(p) {
-    const active = liked.has(p.slug);
-    p.like.textContent = active ? '♥ Curtido · desfazer' : '♡ Curtir artigo';
-    p.like.setAttribute('aria-pressed', String(active));
-    p.like.disabled = !ready || authError || p.likeBusy || Boolean(user && (!profile || !likesReady || likesError));
+  function paintLike(p){
+    const reaction=liked.get(p.slug)?.type;
+    p.like.textContent=reaction==='like'?'👍 Relevante · desfazer':'👍 Relevante';
+    p.disagree.textContent=reaction==='disagree'?'👎 Discordo · desfazer':'👎 Discordo';
+    p.like.setAttribute('aria-pressed',String(reaction==='like'));
+    p.disagree.setAttribute('aria-pressed',String(reaction==='disagree'));
+    const blocked=!ready||authError||p.likeBusy||Boolean(user&&(!profile||!likesReady||likesError));
+    p.like.disabled=blocked;p.disagree.disabled=blocked;
+    p.save.textContent=saved.has(p.slug)?'🔖 Salvo · remover':'🔖 Salvar';
+    p.save.setAttribute('aria-pressed',String(saved.has(p.slug)));
+    p.save.disabled=!ready||authError||p.saveBusy||Boolean(user&&!profile);
   }
-  async function loadLikes(v) {
-    try {
-      for(let offset=0;;offset+=200) {
-        const r=await db.from('reactions').select('article_id,articles(slug)').eq('user_id',user.id).order('article_id').range(offset,offset+199);
-        if(v!==revision)return;
-        if(r.error)throw r.error;
-        for(const item of r.data||[]) if(item.articles?.slug) liked.set(item.articles.slug,item.article_id);
+  async function loadLikes(v){
+    try{
+      for(let offset=0;;offset+=200){
+        const r=await db.from('reactions').select('article_id,reaction_type,articles(slug)')
+          .eq('user_id',user.id).order('article_id').range(offset,offset+199);
+        if(v!==revision)return;if(r.error)throw r.error;
+        for(const item of r.data||[])if(item.articles?.slug)
+          liked.set(item.articles.slug,{id:item.article_id,type:item.reaction_type});
         if((r.data||[]).length<200)break;
       }
       likesReady=true;
-    } catch(e) { if(v!==revision)return; likesError=true; }
-    if(v===revision) for(const p of panels){paintLike(p); if(likesError)p.likeMessage.textContent='Could not load likes. Reload the page to retry.';}
+    }catch{if(v!==revision)return;likesError=true;}
+    if(v===revision)for(const p of panels){
+      paintLike(p);if(likesError)p.likeMessage.textContent='Não foi possível consultar suas reações.';
+    }
   }
-  async function toggleLike(p) {
-    if(!ready||authError||p.likeBusy)return;
-    if(!user){location.assign('/account');return;}
-    if(!profile||!likesReady||likesError)return;
-    const v=revision, uid=user.id;
-    p.likeBusy=true; paintLike(p); p.likeMessage.textContent='Saving…';
-    try {
-      if(liked.has(p.slug)) {
-        const r=await db.from('reactions').delete().eq('article_id',liked.get(p.slug)).eq('user_id',uid).select('id');
-        if(v!==revision)return;if(r.error)throw r.error;
-        if(!r.data?.length)throw new Error('Like not removed');
-        liked.delete(p.slug);p.likeMessage.textContent='Like removed.';
-      } else {
+  async function toggleLike(p,kind){
+    if(!['like','disagree'].includes(kind)||!ready||authError||p.likeBusy)return;
+    if(!user||!profile){location.assign('/account');return;}
+    if(!likesReady||likesError)return;
+    const v=revision,uid=user.id; p.likeBusy=true;paintLike(p);
+    p.likeMessage.textContent='Salvando reação…';
+    try{
+      const old=liked.get(p.slug);
+      if(old?.type===kind){
+        const r=await db.from('reactions').delete().eq('article_id',old.id)
+          .eq('user_id',uid).select('id');
+        if(v!==revision)return;if(r.error||!r.data?.length)throw Error();
+        liked.delete(p.slug);p.likeMessage.textContent='Reação removida.';
+      }else if(old){
+        const r=await db.from('reactions').update({reaction_type:kind})
+          .eq('article_id',old.id).eq('user_id',uid).select('id');
+        if(v!==revision)return;if(r.error||!r.data?.length)throw Error();
+        liked.set(p.slug,{id:old.id,type:kind});p.likeMessage.textContent='Reação atualizada.';
+      }else{
         const a=await db.from('articles').select('id').eq('slug',p.slug).maybeSingle();
-        if(v!==revision)return;if(a.error||!a.data)throw new Error('Article unavailable');
-        const r=await db.from('reactions').insert({article_id:a.data.id,user_id:uid});
-        if(v!==revision)return;if(r.error&&r.error.code!=='23505')throw r.error;
-        liked.set(p.slug,a.data.id);p.likeMessage.textContent='Article liked.';
+        if(v!==revision)return;if(a.error||!a.data)throw Error();
+        const r=await db.from('reactions').insert({article_id:a.data.id,user_id:uid,reaction_type:kind});
+        if(v!==revision)return;if(r.error)throw r.error;
+        liked.set(p.slug,{id:a.data.id,type:kind});p.likeMessage.textContent='Reação registrada.';
       }
-    } catch(e){if(v===revision)p.likeMessage.textContent='Unable to save like. Reload to retry.';}
-    finally {p.likeBusy=false;paintLike(p);}
+    }catch{if(v===revision)p.likeMessage.textContent='Não foi possível salvar sua reação.';}
+    finally{p.likeBusy=false;paintLike(p);}
+  }
+  async function loadSaved(v){
+    if(!user)return;
+    try{
+      for(let offset=0;;offset+=200){
+        const r=await db.from('kodes_saved_articles').select('article_id,articles(slug)')
+          .eq('user_id',user.id).order('article_id').range(offset,offset+199);
+        if(v!==revision)return;if(r.error)throw r.error;
+        for(const x of r.data||[])if(x.articles?.slug)saved.set(x.articles.slug,x.article_id);
+        if((r.data||[]).length<200)break;
+      }
+      if(v===revision)for(const p of panels)paintLike(p);
+    }catch{if(v===revision)for(const p of panels)
+      p.likeMessage.textContent='Artigos salvos indisponíveis no momento.';}
+  }
+  async function toggleSave(p){
+    if(p.saveBusy||!ready||authError)return;
+    if(!user||!profile){location.assign('/account');return;}
+    const v=revision;p.saveBusy=true;paintLike(p);
+    try{
+      const existing=saved.get(p.slug);
+      if(existing){
+        const r=await db.from('kodes_saved_articles').delete()
+          .eq('article_id',existing).eq('user_id',user.id).select('article_id');
+        if(v!==revision)return;if(r.error||!r.data?.length)throw Error();
+        saved.delete(p.slug);p.likeMessage.textContent='Artigo removido dos salvos.';
+      }else{
+        const a=await db.from('articles').select('id').eq('slug',p.slug).maybeSingle();
+        if(v!==revision)return;if(a.error||!a.data)throw Error();
+        const r=await db.from('kodes_saved_articles').insert({article_id:a.data.id,user_id:user.id});
+        if(v!==revision)return;if(r.error)throw r.error;
+        saved.set(p.slug,a.data.id);p.likeMessage.textContent='Artigo salvo.';
+      }
+    }catch{if(v===revision)p.likeMessage.textContent='Não foi possível salvar este artigo.';}
+    finally{p.saveBusy=false;paintLike(p);}
+  }
+  async function shareArticle(p){
+    const target=[...document.querySelectorAll('article[data-article-slug]')]
+      .find(x=>x.dataset.articleSlug===p.slug);
+    if(!target?.id)return;
+    const url=new URL(location.href);url.hash=target.id;
+    try{
+      if(navigator.share)await navigator.share({url:url.href,title:target.querySelector('h3')?.textContent||document.title});
+      else if(navigator.clipboard?.writeText){
+        await navigator.clipboard.writeText(url.href);
+        p.likeMessage.textContent='Link copiado.';
+      }else p.likeMessage.textContent='Compartilhe: '+url.href;
+    }catch{/* Sharing cancelled by the visitor. */}
   }
   function accountLink(label) { const a = node('a',label); a.href='/account'; return a; }
   function updateHeader() {
@@ -424,7 +488,7 @@
     } catch(e) { if(request!==p.request || authRev!==revision)return; p.article=null;updateForm(p);p.list.replaceChildren(node('p','Unable to load comments. Use Refresh comments to try again.')); }
   }
   async function updateSession(session) {
-    const v=++revision;user=null;profile=null;ready=false;authError=false;staff=false;liked.clear();likesReady=false;likesError=false;kodesGrant=null;updateHeader();
+    const v=++revision;user=null;profile=null;ready=false;authError=false;staff=false;liked.clear();saved.clear();likesReady=false;likesError=false;kodesGrant=null;updateHeader();
     for(const p of panels){p.request++;p.list.replaceChildren();p.article=null;clearReply(p);p.input.value='';p.likeMessage.textContent='';paintLike(p);updateForm(p);}
     try {
       if(session) {
@@ -441,10 +505,13 @@
     } catch(e){if(v!==revision)return;user=null;profile=null;authError=true;}
     if(v!==revision)return;ready=true;updateHeader();
     for(const p of panels){paintLike(p);updateForm(p);if(p.details.open) load(p);}
-    if(user&&profile&&!authError){loadLikes(v);void refreshKodesGrant(v);}
+    if(user&&profile&&!authError){loadLikes(v);void loadSaved(v);void refreshKodesGrant(v);}
   }
   for(const article of document.querySelectorAll('article[data-article-slug]')) {
-    const like=node('button','♡ Like article');like.type='button';like.disabled=true;like.setAttribute('aria-pressed','false');
+    const like=node('button','👍 Relevante');like.type='button';like.disabled=true;like.setAttribute('aria-pressed','false');
+    const disagree=node('button','👎 Discordo');disagree.type='button';disagree.disabled=true;disagree.setAttribute('aria-pressed','false');
+    const save=node('button','🔖 Salvar');save.type='button';save.disabled=true;save.setAttribute('aria-pressed','false');
+    const share=node('button','↗ Compartilhar');share.type='button';
     const likeMessage=node('span','','reader-hint');likeMessage.setAttribute('role','status');
     const kodesPanel=node('section',undefined,'kodes-article-identity');
     kodesPanel.setAttribute('aria-label','Participação Kodes-ID neste artigo');
@@ -460,7 +527,8 @@
     actions.append(openDiscussion,learn);
     kodesPanel.append(eyebrow,headline,description,actions);
     article.append(kodesPanel);
-    const likeRow=node('div',undefined,'reader-discussion');likeRow.append(like,likeMessage);article.append(likeRow);
+    const likeRow=node('div',undefined,'reader-discussion kodes-reaction-actions');
+    likeRow.append(like,disagree,save,share,likeMessage);article.append(likeRow);
     const details=node('details',undefined,'reader-discussion');
     const summary=node('summary','Comentários · Participe da discussão');
     const hint=node('p','Somente participantes com credencial Kodes-ID N2 ou superior podem comentar.','reader-hint');
@@ -474,7 +542,9 @@
     const submit=node('button','Publicar comentário','reader-primary');submit.type='submit';
     const message=node('p',undefined,'reader-hint');message.setAttribute('role','status');message.setAttribute('aria-live','polite');
     form.append(replyInfo,label,submit);formHome.append(form);details.append(summary,hint,list,refresh,gateButton,formHome,message);article.append(details);
-    const p={like,likeMessage,likeBusy:false,details,hint,list,form,gateButton,input,replyInfo,replyText,formHome,slug:article.dataset.articleSlug,article:null,parent:null,request:0,busy:false};panels.push(p);like.onclick=()=>toggleLike(p);
+    const p={like,disagree,save,share,likeMessage,likeBusy:false,saveBusy:false,details,hint,list,form,gateButton,input,replyInfo,replyText,formHome,slug:article.dataset.articleSlug,article:null,parent:null,request:0,busy:false};
+    panels.push(p);like.onclick=()=>toggleLike(p,'like');disagree.onclick=()=>toggleLike(p,'disagree');
+    save.onclick=()=>toggleSave(p);share.onclick=()=>shareArticle(p);
     gateButton.onclick=()=>kodesIdentityDialog(false);
     cancel.onclick=()=>clearReply(p);refresh.onclick=()=>load(p);details.addEventListener('toggle',()=>{if(details.open && ready)load(p);});
     form.addEventListener('submit',async e=>{

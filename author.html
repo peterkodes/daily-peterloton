@@ -48,8 +48,8 @@ h1{font-size:clamp(27px,4vw,39px);line-height:1.15;margin:16px 0 10px;word-break
  const params=new URLSearchParams(location.search);
  const key=params.get('author');
  const status=document.getElementById('status');
- const roleNames={unclassified:'Perfil editorial',collaborator:'N3 · Colaborador editorial do site',author:'N4 · Autor editorial do site',
-   editor:'N5 · Editor responsável do site',ai_persona:'Persona editorial de IA'};
+ const roleNames={unclassified:'Perfil editorial',collaborator:'Colaborador editorial do site',author:'Autor editorial do site',
+   editor:'Editor responsável do site',ai_persona:'Persona editorial de IA'};
  if(!key||!/^name:.{1,155}$/u.test(key)){
    status.textContent='Perfil não informado. Abra a ficha de um autor a partir das notícias.';return;
  }

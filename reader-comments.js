@@ -219,7 +219,7 @@
       if(typeof info.public_profile_url==='string'){
         try{
           const url=new URL(info.public_profile_url);
-          if(url.origin===KODES_ORIGIN&&/^\\/users\\/[a-f0-9-]{36}$/i.test(url.pathname)){
+          if(url.origin===KODES_ORIGIN&&/^\/users\/[a-f0-9-]{36}$/i.test(url.pathname)){
             const link=node('a','Ver perfil público no Kodes-ID');link.href=url.href;
             link.target='_blank';link.rel='noopener noreferrer';
             publicInfo.append(link);

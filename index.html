@@ -1088,7 +1088,8 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
     counts.get(author).count++;
     const byline=article.querySelector('.byline');
     if(byline && !byline.querySelector('.kodes-public-authorship')){
-      const authorLabel=$('span','kodes-public-authorship','Editorial: '+author+' · persona de IA');
+      const authorLabel=$('a','kodes-public-authorship','Editorial: '+author+' · persona de IA');
+      authorLabel.href='/author.html?author='+encodeURIComponent('name:'+author.toLocaleLowerCase('pt-BR'));
       byline.append(authorLabel);
       // The Kodes widget is opt-in, isolated, and never grants a human N-level
       // to the synthetic editorial names in this pilot.
@@ -1099,7 +1100,8 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
   }
   const list=$('ol','kodes-author-list');
   for(const [name, data] of [...counts].sort((a,b)=>b[1].count-a[1].count)){
-    const li=$('li');const a=$('a','',name);a.href='#'+data.first.id;
+    const li=$('li');const a=$('a','',name);
+    a.href='/author.html?author='+encodeURIComponent('name:'+name.toLocaleLowerCase('pt-BR'));
     li.append(a,$('em','',String(data.count)+' notícias'));list.append(li);
   }
   authors.append(list);

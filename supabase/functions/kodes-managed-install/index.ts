@@ -46,8 +46,11 @@ Deno.serve(async req=>{
  const rawPublic=new Uint8Array(await crypto.subtle.exportKey('raw',generated.publicKey));
  const rawPrivate=new Uint8Array(await crypto.subtle.exportKey('pkcs8',generated.privateKey));
  const publicKey=b64(rawPublic),privateKey=b64(rawPrivate);
+ const cronSecret=[...crypto.getRandomValues(new Uint8Array(32))]
+   .map(x=>x.toString(16).padStart(2,'0')).join('');
  const {error:stored}=await db.rpc('kodes_viva_store_managed_signing_key',{
-    p_site_id:SITE,p_public_key:publicKey,p_private_key:privateKey,p_installed_by:session.user.id});
+    p_site_id:SITE,p_public_key:publicKey,p_private_key:privateKey,
+    p_cron_secret:cronSecret,p_installed_by:session.user.id});
  if(stored)return reply({error:'Unable to store private key securely in Viva Vault'},503);
  let result:Response;
  try{result=await fetch(KODES,{method:'POST',headers:{'content-type':'application/json'},
@@ -60,6 +63,18 @@ Deno.serve(async req=>{
  const {error:finishError}=await db.rpc('kodes_viva_activate_managed_connector',{
    p_site_id:SITE,p_key_id:completion.key_id});
  if(finishError)return reply({error:'Kodes registered the key, but Viva activation needs recovery'},503);
- return reply({activated:true,site:SITE,
-   message:'Kodes Connect provisioned securely. Complete comment and metrics tests before marking fully operational.'});
+ // Initial signed report is an optional health check; failure never
+ // overwrites the successful, now persisted, key activation.
+ let firstReport=false;
+ try{
+   const report=await fetch(url+'/functions/v1/kodes-signed-telemetry',{
+     method:'POST',
+     headers:{'content-type':'application/json','authorization':'Bearer '+token,
+       'apikey':Deno.env.get('SUPABASE_ANON_KEY')||'','origin':VIVA},
+     body:JSON.stringify({date:new Date(Date.now()-86400000).toISOString().slice(0,10)}),
+   });
+   firstReport=report.ok;
+ }catch{/* scheduler retries independently */}
+ return reply({activated:true,site:SITE,initial_report_accepted:firstReport,
+   message:'Server credentials provisioned. Comment authorization requires separate end-to-end validation.'});
 });

@@ -132,10 +132,36 @@
     '.reader-comment-actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 3px}',
     '.reader-comment-author{cursor:pointer;background:transparent;border:none;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px;font:inherit;font-weight:700}',
     '.reader-reply-compose{margin:9px 0 10px;padding:12px;border-radius:10px;border:1px solid var(--line,#ddd);background:var(--card,#fff)}',
+    '.reader-kodes-profile-backdrop{position:fixed;z-index:2147482500;inset:0;display:grid;place-items:center;background:#17221dcc;padding:14px}',
+    '.reader-kodes-profile-panel{width:min(400px,100%);max-height:85vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:16px;padding:24px;box-shadow:0 24px 60px #0003;font:14px/1.6 system-ui,sans-serif}',
+    '.reader-kodes-profile-panel h3{margin:0 0 8px;font-size:22px;line-height:1.25}',
+    '.reader-kodes-profile-panel button{margin-top:10px;border:1px solid var(--line,#ddd);background:transparent;padding:8px 15px;border-radius:8px;cursor:pointer}',
     '@media(max-width:480px){.reader-thread-children{margin-left:7px;padding-left:9px}}'
   ].join('');
   document.head.append(threadedStyle);
 
+  function openParticipantProfile(name,visibleCount){
+    // A portal-only account must not be misrepresented as Kodes verified.
+    // A future consented Kodes public profile resolver may replace this
+    // placeholder once a link is validated server-side.
+    const backdrop=node('div',undefined,'reader-kodes-profile-backdrop');
+    const dialog=node('section',undefined,'reader-kodes-profile-panel');
+    dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');
+    const title=node('h3',name);title.id='reader-profile-title-'+Math.random().toString(36).slice(2);
+    dialog.setAttribute('aria-labelledby',title.id);
+    const close=node('button','Fechar');close.type='button';
+    const stop=e=>{if(e.key==='Escape')dismiss();};
+    const dismiss=()=>{backdrop.remove();document.removeEventListener('keydown',stop);};
+    close.onclick=dismiss;backdrop.onclick=e=>{if(e.target===backdrop)dismiss()};
+    dialog.append(title,
+      node('p','Perfil público do participante neste portal.','reader-comment-meta'),
+      node('p',visibleCount+' comentário(s) visível(is) nesta lista de discussão.'),
+      node('p','Credencial pública Kodes-ID: ainda não vinculada e autorizada para exibição.','reader-comment-meta'),
+      close);
+    backdrop.append(dialog);document.body.append(backdrop);
+    document.addEventListener('keydown',stop);
+    close.focus();
+  }
   function showComments(p, rows) {
     p.list.replaceChildren();
     p.commentCards=new Map();
@@ -167,7 +193,10 @@
       card.dataset.commentId=c.id;
       const name=c.profiles?.display_name||'Leitor';
       const byline=node('div',undefined,'reader-comment-byline');
-      const identity=node('strong',name);
+      const identity=node('button',name,'reader-comment-author');
+      identity.type='button';
+      identity.setAttribute('aria-label','Abrir perfil do participante '+name);
+      identity.onclick=()=>openParticipantProfile(name,rows.filter(x=>x.user_id===c.user_id&&x.status==='approved').length);
       byline.append(identity,node('span',' · '+new Date(c.created_at).toLocaleString('pt-BR'),'reader-comment-meta'));
       card.append(byline);
       if(c.parent_id&&!index.has(c.parent_id))

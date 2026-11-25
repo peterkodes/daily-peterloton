@@ -144,6 +144,9 @@
     '.reader-kodes-profile-backdrop{position:fixed;z-index:2147482500;inset:0;display:grid;place-items:center;background:#17221dcc;padding:14px}',
     '.reader-kodes-profile-panel{width:min(400px,100%);max-height:85vh;overflow:auto;background:var(--card,#fff);color:var(--ink,#111);border:1px solid var(--line,#ddd);border-radius:16px;padding:24px;box-shadow:0 24px 60px #0003;font:14px/1.6 system-ui,sans-serif}',
     '.reader-kodes-profile-panel h3{margin:0 0 8px;font-size:22px;line-height:1.25}',
+    '.reader-kodes-credential-summary{border:1px solid #b8d0ed;background:#f3f7fc;border-radius:12px;padding:13px 15px;color:#142e55;margin:12px 0}',
+    '.reader-kodes-credential-summary p{margin:6px 0;font-size:12px}',
+    '.reader-kodes-credential-summary small{font-size:11px;color:#4c5b70}',
     '.reader-kodes-profile-panel button{margin-top:10px;border:1px solid var(--line,#ddd);background:transparent;padding:8px 15px;border-radius:8px;cursor:pointer}',
     '@media(max-width:480px){.reader-thread-children{margin-left:7px;padding-left:9px}}'
   ].join('');
@@ -167,7 +170,7 @@
     }
     return publicCards.get(userId);
   };
-  function openParticipantProfile(name,visibleCount,userId){
+  function openParticipantProfile(name,visibleCount,userId,signature=null){
     const existing=document.querySelector('.reader-kodes-profile-backdrop');
     if(existing)existing.remove();
     const previousFocus=document.activeElement;
@@ -184,12 +187,18 @@
       if(previousFocus?.isConnected&&typeof previousFocus.focus==='function')previousFocus.focus();
     };
     close.onclick=dismiss;backdrop.onclick=e=>{if(e.target===backdrop)dismiss()};
+    const proof=node('div',undefined,'reader-kodes-credential-summary');
+    if(signature&&Number.isInteger(signature.level)&&signature.level>=2){
+      proof.append(node('strong','Kodes-ID · N'+signature.level+' · Comentarista'),
+        node('p','Concedido por: Kodes-ID · verificação de participação no momento da publicação.'),
+        node('small','Esta credencial não comprova identidade civil, profissão ou especialidade.'));
+    }
     const publicInfo=node('div','Consultando autorização do perfil Kodes…','reader-comment-meta');
     publicInfo.setAttribute('role','status');
     dialog.append(title,
       node('p','Perfil do comentarista neste portal','reader-comment-meta'),
       node('p',visibleCount+' comentário(s) aprovado(s) nesta discussão carregada.'),
-      publicInfo,close);
+      proof,publicInfo,close);
     backdrop.append(dialog);document.body.append(backdrop);
     document.addEventListener('keydown',stop);close.focus();
     void consentedCard(userId).then(info=>{
@@ -241,11 +250,11 @@
       const identity=node('button',name,'reader-comment-author');
       identity.type='button';
       identity.setAttribute('aria-label','Abrir perfil do participante '+name);
-      const viewProfile=()=>openParticipantProfile(name,rows.filter(x=>x.user_id===c.user_id&&x.status==='approved').length,c.user_id);
-      identity.onclick=viewProfile;
       // Only show verified N-level if the server captured an actual grant at publication.
       const stamped=Array.isArray(c.kodes_comment_signatures)
         ?c.kodes_comment_signatures[0]:c.kodes_comment_signatures;
+      const viewProfile=()=>openParticipantProfile(name,rows.filter(x=>x.user_id===c.user_id&&x.status==='approved').length,c.user_id,stamped);
+      identity.onclick=viewProfile;
       if(stamped&&Number.isInteger(stamped.level)&&stamped.level>=2){
         const badge=node('button',undefined,'reader-kodes-verified');
         badge.type='button';

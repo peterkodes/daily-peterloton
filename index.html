@@ -1094,6 +1094,7 @@ A small note to recognize I saw Avancini at the gravel worlds. Great to see BR r
       // The Kodes widget is opt-in, isolated, and never grants a human N-level
       // to the synthetic editorial names in this pilot.
       const authorMount=$('span');authorMount.dataset.kodesAuthor='name:'+author.toLocaleLowerCase('pt-BR');
+      authorMount.dataset.kodesProfileUrl=authorLabel.getAttribute('href');
       authorMount.className='kodes-public-author-credential';
       byline.append(authorMount);
     }

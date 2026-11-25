@@ -55,3 +55,20 @@ revoke all on function public.kodes_viva_activate_managed_connector(uuid,uuid)
  from public,anon,authenticated;
 grant execute on function public.kodes_viva_activate_managed_connector(uuid,uuid)
  to service_role;
+
+-- Restricted decryption for trusted Viva server functions (metrics and comment adapter).
+create or replace function public.kodes_viva_get_managed_signer(p_site_id uuid)
+returns table(signing_key_id uuid,private_key_pkcs8 text)
+language plpgsql security definer set search_path='' as $$
+begin
+ if current_setting('request.jwt.claim.role',true) is distinct from 'service_role'
+ then raise exception 'Backend only';end if;
+ return query
+ select c.kodes_key_id,v.decrypted_secret
+ from public.kodes_managed_server_connectors c
+ join vault.decrypted_secrets v on v.id=c.vault_secret_id
+ where c.public_site_id=p_site_id and c.activated_at is not null and c.kodes_key_id is not null;
+end; $$;
+revoke all on function public.kodes_viva_get_managed_signer(uuid)
+ from public,anon,authenticated;
+grant execute on function public.kodes_viva_get_managed_signer(uuid) to service_role;

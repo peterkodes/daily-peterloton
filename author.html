@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Perfil editorial · Viva Mídia</title>
+<style>
+:root{--ink:#142320;--muted:#59635f;--accent:#ff6204;--line:#ddd;--paper:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:#f7f8f6;color:var(--ink);font:16px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}
+header{background:#fff;border-bottom:1px solid var(--line)}
+.wrap{width:min(850px,calc(100% - 32px));margin:auto}
+header .wrap{display:flex;align-items:center;justify-content:space-between;padding:22px 0;gap:12px}
+.logo{font-weight:850;letter-spacing:-.4px;font-size:22px}
+.logo span{color:var(--accent)}
+a{color:var(--ink);text-underline-offset:3px}
+main{padding:34px 0 90px}
+.card{border:1px solid #d9dfd8;border-radius:18px;background:var(--paper);padding:clamp(18px,4vw,36px);box-shadow:0 5px 25px #0b2e1711}
+.kicker{font-size:12px;font-weight:750;letter-spacing:.14em;color:#b04a14;text-transform:uppercase}
+h1{font-size:clamp(27px,4vw,39px);line-height:1.15;margin:16px 0 10px;word-break:break-word}
+.role{display:inline-flex;border:1px solid #c4d7c5;background:#edf6e8;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700}
+.bio{white-space:pre-wrap;color:#394640;margin:26px 0;line-height:1.8}
+.note{border-left:4px solid var(--accent);padding:12px 15px;background:#fff7ee;color:#5b4b42;font-size:13px}
+.status{padding:24px 0;color:var(--muted)}
+.actions{margin-top:20px;display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a href="/" class="logo">Viva<span>Mídia</span></a><a href="/">Voltar às notícias</a></div></header>
+<main class="wrap">
+ <div class="card">
+  <p class="kicker">Autoria · identificação editorial</p>
+  <div id="status" class="status" role="status">Verificando o perfil público…</div>
+  <section id="profile" hidden>
+    <h1 id="name"></h1>
+    <span id="role" class="role"></span>
+    <p id="bio" class="bio"></p>
+    <p class="note">Esta ficha é uma classificação editorial publicada pela Viva Mídia através do Kodes Connect. Não representa uma verificação de identidade civil, formação profissional ou credencial pessoal Kodes-ID N1–N5.</p>
+    <div class="actions"><a href="/">Consultar notícias</a><a href="https://app.kodes.com.br/participar?site=7554902f-4506-494e-8f69-50e4cef8e767&amp;intent=identity" rel="noopener noreferrer">Conhecer Kodes-ID</a></div>
+  </section>
+ </div>
+</main>
+<script>
+(()=>{
+'use strict';
+ const site='7554902f-4506-494e-8f69-50e4cef8e767';
+ const params=new URLSearchParams(location.search);
+ const key=params.get('author');
+ const status=document.getElementById('status');
+ const roleNames={unclassified:'Perfil editorial',collaborator:'Colaborador editorial',author:'Autor editorial',
+   editor:'Editor responsável',ai_persona:'Persona editorial de IA'};
+ if(!key||!/^name:.{1,155}$/u.test(key)){
+   status.textContent='Perfil não informado. Abra a ficha de um autor a partir das notícias.';return;
+ }
+ const url=new URL('https://marwnbmablxzziyvhxof.supabase.co/functions/v1/kodes-public-authors');
+ url.searchParams.set('site',site);
+ url.searchParams.set('author_key',key);
+ fetch(url,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'})
+   .then(r=>{if(!r.ok)throw Error();return r.json()})
+   .then(data=>{
+     const a=data.authors?.[0];
+     if(data.site_id!==site||data.verified_kodes_credentials!==false||a?.author_key!==key||
+       !roleNames[a.classification])throw Error();
+     document.getElementById('name').textContent=a.display_name;
+     document.getElementById('role').textContent=roleNames[a.classification];
+     document.getElementById('bio').textContent=a.biography||'Sem biografia editorial pública.';
+     document.title=a.display_name+' · Perfil editorial · Viva Mídia';
+     status.hidden=true;
+     document.getElementById('profile').hidden=false;
+   })
+   .catch(()=>{status.textContent='Perfil ainda não publicado ou indisponível.'});
+})();
+</script>
+</body>
+</html>

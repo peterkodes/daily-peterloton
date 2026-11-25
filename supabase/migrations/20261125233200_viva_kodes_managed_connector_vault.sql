@@ -38,3 +38,20 @@ revoke all on function public.kodes_viva_store_managed_signing_key(uuid,text,tex
  from public,anon,authenticated;
 grant execute on function public.kodes_viva_store_managed_signing_key(uuid,text,text,uuid)
  to service_role;
+
+create or replace function public.kodes_viva_activate_managed_connector(
+ p_site_id uuid,p_key_id uuid
+) returns boolean language plpgsql security definer set search_path='' as $$
+begin
+ if current_setting('request.jwt.claim.role',true) is distinct from 'service_role'
+ then raise exception 'Backend only'; end if;
+ update public.kodes_managed_server_connectors
+ set kodes_key_id=p_key_id,activated_at=now()
+ where public_site_id=p_site_id and kodes_key_id is null and activated_at is null;
+ if not found then raise exception 'Connector unavailable or already activated'; end if;
+ return true;
+end; $$;
+revoke all on function public.kodes_viva_activate_managed_connector(uuid,uuid)
+ from public,anon,authenticated;
+grant execute on function public.kodes_viva_activate_managed_connector(uuid,uuid)
+ to service_role;

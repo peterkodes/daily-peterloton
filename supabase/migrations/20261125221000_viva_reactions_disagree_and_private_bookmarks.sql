@@ -11,6 +11,7 @@ create policy reactions_update on public.reactions
   select 1 from public.articles a where a.id=article_id
     and a.status='published' and a.published_at<=now()));
 grant update(reaction_type) on public.reactions to authenticated;
+grant insert(reaction_type) on public.reactions to authenticated;
 create table if not exists public.kodes_saved_articles(
  user_id uuid not null references public.profiles(id) on delete cascade,
  article_id uuid not null references public.articles(id) on delete cascade,

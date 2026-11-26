@@ -31,6 +31,20 @@ Deno.serve(async req=>{
  try{const str=await req.text();if(str.length>700)return reply({error:'Request too large'},413);
      payload=JSON.parse(str);if(!payload||typeof payload!=='object'||Array.isArray(payload))throw Error()}
  catch{return reply({error:'Invalid request'},400)}
+ if(payload.action==='status'){
+   if(payload.site!==SITE)return reply({error:'Invalid website'},400);
+   const {data:installed,error:lookup}=await db.from('kodes_managed_server_connectors')
+     .select('public_site_id,kodes_key_id,activated_at,installed_at')
+     .eq('public_site_id',SITE).maybeSingle();
+   if(lookup)return reply({error:'Cannot verify Kodes Connect status'},503);
+   // Safe administrative metadata only; never return private key or Vault identifiers.
+   const active=!!installed?.activated_at&&!!installed?.kodes_key_id;
+   return reply({site:SITE,stage:active?'cryptographic_active':installed?'pending':'not_installed',
+     active, key_id:active?installed.kodes_key_id:null,
+     activated_at:active?installed.activated_at:null,
+     comments_status:'requires_independent_validation',
+     telemetry_status:'requires_independent_validation'},200);
+ }
  if(payload.action==='preflight'){
    if(payload.site!==SITE)return reply({ready:false,error:'Invalid website'},400);
    const {data:installed,error:lookup}=await db.from('kodes_managed_server_connectors')

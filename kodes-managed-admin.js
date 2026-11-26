@@ -19,6 +19,40 @@
   button.textContent='Autorizar a conexão segura';button.disabled=true;
   box.append(heading,explanation,status,button);host.prepend(box);
   let installationToken='',eligible=false,completed=false,inProgress=false;
+  const state=document.createElement('section');state.className='kodes-connect-status';
+  state.setAttribute('aria-live','polite');
+  const stateTitle=document.createElement('h3');stateTitle.textContent='Estado da conexão Kodes Connect';
+  const stateBody=document.createElement('p');stateBody.textContent='Consultando o servidor Viva…';
+  const refreshStatus=document.createElement('button');refreshStatus.type='button';
+  refreshStatus.textContent='Verificar conexão agora';
+  refreshStatus.onclick=()=>void checkConnectionStatus();
+  state.append(stateTitle,stateBody,refreshStatus);
+  box.append(state);
+  async function checkConnectionStatus(){
+    refreshStatus.disabled=true;
+    try{
+      const {data,error}=await client.functions.invoke('kodes-managed-install',{
+        body:{action:'status',site:SITE}
+      });
+      if(error||!data||typeof data.active!=='boolean')throw Error('Status temporariamente indisponível');
+      if(data.active===true&&data.key_id){
+        completed=true;eligible=false;button.disabled=true;
+        state.classList.add('is-active');
+        stateBody.textContent='CONECTOR CRIPTOGRÁFICO ATIVO · Chave Kodes: '+data.key_id+
+          ' · Ativado em '+new Date(data.activated_at).toLocaleString('pt-BR')+
+          '. Comentários N2 e telemetria exigem homologação independente.';
+        status.textContent='Conectado ao Kodes. Nenhuma nova instalação é necessária.';
+        report('kodes:managed-complete');
+      }else{
+        state.classList.remove('is-active');
+        stateBody.textContent=data.stage==='pending'
+          ?'Instalação pendente de conclusão entre servidores. Não gere novas chaves.'
+          :'Conector ainda não ativado. Inicie pelo Backoffice Kodes.';
+      }
+    }catch{
+      stateBody.textContent='Não foi possível consultar o status. A conexão não foi confirmada nesta tela.';
+    }finally{refreshStatus.disabled=false;}
+  }
   const report=(type,message)=>{
     if(window.opener)window.opener.postMessage({type,site:SITE,...(message?{message}:{})},APP);
   };
@@ -53,6 +87,7 @@
     if(readiness.data?.activated===true){
       completed=true;eligible=false;
       status.textContent='Conexão de servidor já ativada. Não é necessário reinstalar.';
+      void checkConnectionStatus();
       report('kodes:managed-complete');
       return;
     }
@@ -89,7 +124,7 @@
         throw Error(typeof detail==='string'&&detail.length<320
           ?detail:'A instalação não foi confirmada pelo servidor Viva Mídia.');
       }
-      completed=true;status.textContent='Conexão de servidor ativada com segurança. Os testes de comentários e telemetria serão verificados separadamente.';
+      completed=true;status.textContent='Conexão de servidor ativada. Conferindo registro persistente…';void checkConnectionStatus();
       report('kodes:managed-complete');
     }catch(e){
       installationToken='';status.textContent=e instanceof Error?e.message:'Falha na instalação.';

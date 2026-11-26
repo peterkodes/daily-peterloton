@@ -4,19 +4,19 @@
   'use strict';
   const APP='https://app.kodes.com.br';
   const SITE='7554902f-4506-494e-8f69-50e4cef8e767';
-  if(new URLSearchParams(location.search).get('kodes_connect')!=='1')return;
+  const connecting=new URLSearchParams(location.search).get('kodes_connect')==='1';
   const host=document.getElementById('dashboard');
   if(!host||!window.supabase?.createClient)return;
   const client=window.supabase.createClient('https://jyjrgdoeuzlvvpkymqsu.supabase.co',
     'sb_publishable_suBMv7WnrejReyIswL19jw_ipsMz5Gr');
   const box=document.createElement('section');box.className='card';box.setAttribute('aria-live','polite');
-  const heading=document.createElement('h2');heading.textContent='Ativação automática do Kodes Connect';
+  const heading=document.createElement('h2');heading.textContent=connecting?'Ativação automática do Kodes Connect':'Kodes Connect · Estado da conexão';
   const explanation=document.createElement('p');
-  explanation.textContent='Confirme a instalação apenas se você administra este portal e autorizou o Kodes. O servidor criará e protegerá as credenciais; não é necessário copiar chaves.';
+  explanation.textContent=connecting?'Confirme a instalação apenas se você administra este portal e autorizou o Kodes. O servidor criará e protegerá as credenciais; não é necessário copiar chaves.':'Identidade do conector de servidor. A verificação de comentários N2 e telemetria é realizada separadamente.';
   const status=document.createElement('p');status.setAttribute('role','status');
   status.textContent='Verificando sua conta administrativa…';
   const button=document.createElement('button');button.className='primary';button.type='button';
-  button.textContent='Autorizar a conexão segura';button.disabled=true;
+  button.textContent='Autorizar a conexão segura';button.disabled=true;button.hidden=!connecting;
   box.append(heading,explanation,status,button);host.prepend(box);
   let installationToken='',eligible=false,completed=false,inProgress=false;
   const state=document.createElement('section');state.className='kodes-connect-status';
@@ -91,8 +91,9 @@
       report('kodes:managed-complete');
       return;
     }
-    status.textContent='Conta administrativa confirmada. Aguardando a autorização iniciada no Kodes.';
-    report('kodes:managed-ready');
+    status.textContent=connecting?'Conta administrativa confirmada. Aguardando a autorização iniciada no Kodes.':'Conta administrativa confirmada. Você pode verificar a conexão abaixo.';
+    void checkConnectionStatus();
+    if(connecting)report('kodes:managed-ready');
   }
   window.addEventListener('message',event=>{
     if(event.origin===APP&&event.source===window.opener&&eligible&&event.data?.type==='kodes:managed-ping'&&event.data?.site===SITE){

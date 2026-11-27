@@ -54,3 +54,15 @@ revoke all on function public.kodes_viva_enqueue_moderation_change() from public
 drop trigger if exists kodes_viva_activity_moderation on public.comments;
 create trigger kodes_viva_activity_moderation after update of status on public.comments
  for each row execute function public.kodes_viva_enqueue_moderation_change();
+
+-- One-time reconciliation of previously stamped N2 comments; do not stamp
+-- old, non-N2 comments or infer a credential retroactively.
+insert into public.kodes_partner_comment_outbox
+ (comment_id,event_status,source_created_at,source_updated_at)
+select c.id,
+ case when c.status='approved' then 'approved'
+  when c.status='rejected' then 'rejected'
+  when c.status='hidden' then 'hidden' else 'pending' end,
+ c.created_at,now()
+from public.comments c join public.kodes_comment_signatures k on k.comment_id=c.id
+where not exists(select 1 from public.kodes_partner_comment_outbox e where e.comment_id=c.id);

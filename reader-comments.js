@@ -340,7 +340,7 @@
         identityStatus.onclick=event=>{event.preventDefault();openKodesJourney();};
       }else{
         identityStatus.removeAttribute('aria-haspopup');
-        identityStatus.onclick=null;
+        identityStatus.onclick=vorticePilot?event=>{event.preventDefault();if(user&&profile)authorizeKodes();else location.assign('/account');}:null;
       }
     }
   }
@@ -367,9 +367,10 @@
     backdrop.onclick=event=>{if(event.target===backdrop)dismiss();};
     const credential=node('div',undefined,'reader-kodes-credential-summary');
     credential.append(node('small','KODES-ID · VIVA MÍDIA · VÍNCULO CONFIRMADO'),
-      node('strong',profile?.display_name||'Leitor Viva Mídia'),
+      node('strong',kodesIdentity.name||profile?.display_name||'Leitor Viva Mídia'),
       node('p','N'+level+' · '+(['','Leitor','Comentarista','Colaborador','Autor','Editor'][level]||'Participante')),
       node('small','Seu nível é consultado no servidor Kodes. Autorias e especialidades são aprovadas por site.'));
+    if(kodesIdentity.credentialId)credential.append(node('small','Credencial · '+kodesIdentity.credentialId));
     dialog.append(heading,credential);
     if(kodesIdentity.interests?.length)
       dialog.append(node('p','Áreas declaradas: '+kodesIdentity.interests.join(' · ')));
@@ -478,10 +479,9 @@
 
   const KODES_PROFILE_API='https://marwnbmablxzziyvhxof.supabase.co/functions/v1/kodes-public-participant';
   const KODES_SITE='7554902f-4506-494e-8f69-50e4cef8e767';
-  const publicCards=new Map();
   const consentedCard=userId=>{
     if(typeof userId!=='string'||!/^[0-9a-f-]{36}$/i.test(userId))return Promise.resolve(null);
-    if(!publicCards.has(userId)){
+    {
       const url=new URL(KODES_PROFILE_API);
       url.searchParams.set('site',KODES_SITE);url.searchParams.set('user',userId);
       const query=fetch(url,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'})
@@ -490,9 +490,8 @@
            typeof info.display_name==='string'&&Number.isInteger(info.level)&&
            info.level>=1&&info.level<=5?info:null)
         .catch(()=>null);
-      publicCards.set(userId,query);
+      return query;
     }
-    return publicCards.get(userId);
   };
   function openParticipantProfile(name,visibleCount,userId,signature=null){
     const existing=document.querySelector('.reader-kodes-profile-backdrop');
@@ -527,7 +526,7 @@
     backdrop.append(dialog);document.body.append(backdrop);
     document.addEventListener('keydown',stop);close.focus();
     void consentedCard(userId).then(info=>{
-      if(!active)return;
+      if(!active||!dialog.isConnected)return;
       publicInfo.replaceChildren();
       if(!info){
         publicInfo.append(node('p','Perfil Kodes-ID não disponibilizado publicamente por este participante ou temporariamente indisponível.'));
@@ -677,6 +676,7 @@
   }
   async function updateSession(session) {
     if(vorticePilot&&kodesPopup){kodesPopup.close();kodesPopup=null;kodesState='';}
+    document.querySelectorAll('.reader-kodes-profile-backdrop').forEach(el=>el.remove());
     const v=++revision;user=null;profile=null;ready=false;authError=false;staff=false;liked.clear();saved.clear();likesReady=false;likesError=false;kodesGrant=null;kodesIdentity=null;updateHeader();
     for(const p of panels){p.request++;p.list.replaceChildren();p.article=null;clearReply(p);p.input.value='';p.likeMessage.textContent='';paintLike(p);updateForm(p);}
     try {

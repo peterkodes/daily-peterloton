@@ -49,6 +49,35 @@
     }catch{if(v===revision)kodesIdentity=null;}
     if(v===revision)repaintGrants();
   }
+  async function refreshLinkedKodesGrant(){
+    if(!ready||authError||!user||!profile||kodesBusy)return;
+    if(!kodesIdentity?.linked||!kodesIdentity.canComment){
+      kodesIdentityDialog(false);return;
+    }
+    kodesBusy=true;
+    for(const p of panels)if(p.details.open)p.hint.textContent='Conferindo a associação Kodes-ID no servidor…';
+    const authRevision=revision;
+    try{
+      const {data,error}=await db.functions.invoke('kodes-comment-grant',{
+        body:{action:'refresh_linked'},
+      });
+      if(authRevision!==revision)return;
+      if(error||data?.authorized!==true||!Number.isInteger(data.level)||
+         data.level<2||data.level>5||!data.expires_at)throw Error('No valid grant');
+      kodesGrant={level:data.level,expires_at:data.expires_at};
+      repaintGrants();
+      const active=panels.find(p=>p.details.open);
+      if(active)active.input.focus();
+    }catch{
+      if(authRevision===revision){
+        kodesGrant=null;
+        kodesIdentity=null;
+        repaintGrants();
+        for(const p of panels)if(p.details.open)
+          p.hint.textContent='Não foi possível renovar a credencial. Confira seu vínculo Kodes-ID.';
+      }
+    }finally{kodesBusy=false;}
+  }
   function kodesIdentityDialog(recognized=false){
     const old=document.querySelector('.viva-kodes-auth-backdrop');
     if(old)old.remove();
@@ -346,6 +375,8 @@
     else if (!p.article.comments_enabled) p.hint.textContent='Comments are closed for this article.';
     else if (!user) p.hint.append('Comentários assinados por nome e nível. ',accountLink('Entre com sua conta Viva Mídia'),' e confirme seu Kodes-ID para participar.');
     else if (!profile) p.hint.append(accountLink('Complete your reader profile'),' before commenting.');
+    else if(!grantValid()&&kodesIdentity?.linked&&kodesIdentity.canComment)
+      p.hint.textContent='Seu Kodes-ID está vinculado e reconhecido. Clique para comentar: a autorização será renovada pelo servidor, sem novo cadastro.';
     else if(!grantValid())p.hint.textContent='Para comentar ou responder, vincule seu Kodes-ID e confirme o nível N2. Seus comentários anteriores permanecem visíveis.';
     else p.hint.textContent='Kodes-ID N2 confirmado. Comentando como '+profile.display_name+'. '+(commentApprovalMode==='automatic'?'Publicação automática habilitada pela redação.':'Sujeito à aprovação editorial.');
     // Preserve drafts and reply targets during Kodes-ID authorization.
@@ -432,7 +463,8 @@
     close.onclick=dismiss;backdrop.onclick=e=>{if(e.target===backdrop)dismiss()};
     const proof=node('div',undefined,'reader-kodes-credential-summary');
     if(signature&&Number.isInteger(signature.level)&&signature.level>=2){
-      proof.append(node('strong','Kodes-ID · N'+signature.level+' · Comentarista'),
+      proof.append(node('strong','Kodes-ID · N'+signature.level+' · '+
+        (['','Leitor','Comentarista','Colaborador','Autor','Editor'][signature.level]||'Participante')),
         node('p','Concedido por: Kodes-ID · verificação de participação no momento da publicação.'),
         node('small','Esta credencial não comprova identidade civil, profissão ou especialidade.'));
     }
@@ -519,7 +551,8 @@
         badge.type='button';
         badge.setAttribute('aria-label','Ver credencial Kodes-ID N'+stamped.level+' deste comentário');
         const mark=node('span','K','kodes-kmark');
-        badge.append(mark,node('span','N'+stamped.level+' · Comentarista'));
+        const title=['','Leitor','Comentarista','Colaborador','Autor','Editor'][stamped.level]||'Participante';
+        badge.append(mark,node('span','N'+stamped.level+' · '+title));
         badge.onclick=viewProfile;
         byline.append(badge);
       }
@@ -541,7 +574,8 @@
           p.replyText.textContent='Respondendo a '+name;
           p.form.classList.add('reader-reply-compose');
           holder.append(p.form);
-          if(!grantValid())authorizeKodes();
+          if(!grantValid()&&kodesIdentity?.linked&&kodesIdentity.canComment)void refreshLinkedKodesGrant();
+          else if(!grantValid())authorizeKodes();
           else p.input.focus();
         };
         actions.append(reply);card.append(actions);
@@ -649,7 +683,10 @@
     const p={like,disagree,save,share,likeMessage,likeBusy:false,saveBusy:false,details,hint,list,form,gateButton,input,replyInfo,replyText,formHome,slug:article.dataset.articleSlug,article:null,parent:null,request:0,busy:false};
     panels.push(p);like.onclick=()=>toggleLike(p,'like');disagree.onclick=()=>toggleLike(p,'disagree');
     save.onclick=()=>toggleSave(p);share.onclick=()=>shareArticle(p);
-    gateButton.onclick=()=>kodesIdentityDialog(false);
+    gateButton.onclick=()=>{
+      if(kodesIdentity?.linked&&kodesIdentity.canComment)void refreshLinkedKodesGrant();
+      else kodesIdentityDialog(false);
+    };
     cancel.onclick=()=>clearReply(p);refresh.onclick=()=>load(p);details.addEventListener('toggle',()=>{if(details.open && ready)load(p);});
     form.addEventListener('submit',async e=>{
       e.preventDefault();

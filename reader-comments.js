@@ -16,7 +16,7 @@
   const saved = new Map();
   // Commenting needs a server-issued, short-lived N2 Kodes-ID grant.
   // Reading all historic comments remains free.
-  let kodesGrant=null,kodesBusy=false,kodesPopup=null,kodesState='';
+  let kodesGrant=null,kodesIdentity=null,kodesBusy=false,kodesPopup=null,kodesState='';
   const KODES_ORIGIN='https://app.kodes.com.br';
   const grantValid=()=>Boolean(kodesGrant&&kodesGrant.level>=2&&Date.parse(kodesGrant.expires_at)>Date.now()+5000);
   function repaintGrants(){updateHeader();for(const p of panels)updateForm(p);}
@@ -28,6 +28,19 @@
       if(error)throw error;
       kodesGrant=data;
     }catch{if(v===revision)kodesGrant=null;}
+    if(v===revision)repaintGrants();
+  }
+  async function refreshKodesIdentity(v=revision){
+    if(!user||!profile)return;
+    try{
+      const {data,error}=await db.functions.invoke('kodes-comment-grant',{
+        body:{action:'identity_status'}
+      });
+      if(v!==revision)return;
+      if(error||typeof data?.linked!=='boolean'||!Number.isInteger(data.level))
+        throw Error('Unable to verify Kodes identity');
+      kodesIdentity={linked:data.linked,level:data.level,canComment:data.can_comment===true};
+    }catch{if(v===revision)kodesIdentity=null;}
     if(v===revision)repaintGrants();
   }
   function kodesIdentityDialog(recognized=false){
@@ -229,8 +242,14 @@
     account.textContent = user ? 'Minha conta Viva' : 'Entrar na Viva'; logout.hidden = !user; adminLink.hidden = !staff || !ready || authError;
     const identityStatus=$('kodes-reader-status');
     if(identityStatus){
-      identityStatus.textContent=grantValid()?'Kodes-ID · N'+kodesGrant.level+' autorizado para comentar':'Kodes-ID · Identidade e participação';
-      identityStatus.classList.toggle('is-verified',grantValid());
+      const linked=Boolean(kodesIdentity?.linked);
+      const level=linked?kodesIdentity.level:grantValid()?kodesGrant.level:0;
+      identityStatus.textContent=linked
+        ?'Kodes-ID · N'+level+' · identidade vinculada'+(grantValid()?' · autorizado para comentar':'')
+        :grantValid()?'Kodes-ID · N'+kodesGrant.level+' autorizado para comentar'
+        :'Kodes-ID · Ativar identidade';
+      identityStatus.classList.toggle('is-verified',linked||grantValid());
+      identityStatus.setAttribute('aria-label',identityStatus.textContent);
     }
   }
   function updateForm(p) {
@@ -488,7 +507,7 @@
     } catch(e) { if(request!==p.request || authRev!==revision)return; p.article=null;updateForm(p);p.list.replaceChildren(node('p','Unable to load comments. Use Refresh comments to try again.')); }
   }
   async function updateSession(session) {
-    const v=++revision;user=null;profile=null;ready=false;authError=false;staff=false;liked.clear();saved.clear();likesReady=false;likesError=false;kodesGrant=null;updateHeader();
+    const v=++revision;user=null;profile=null;ready=false;authError=false;staff=false;liked.clear();saved.clear();likesReady=false;likesError=false;kodesGrant=null;kodesIdentity=null;updateHeader();
     for(const p of panels){p.request++;p.list.replaceChildren();p.article=null;clearReply(p);p.input.value='';p.likeMessage.textContent='';paintLike(p);updateForm(p);}
     try {
       if(session) {
@@ -505,7 +524,7 @@
     } catch(e){if(v!==revision)return;user=null;profile=null;authError=true;}
     if(v!==revision)return;ready=true;updateHeader();
     for(const p of panels){paintLike(p);updateForm(p);if(p.details.open) load(p);}
-    if(user&&profile&&!authError){loadLikes(v);void loadSaved(v);void refreshKodesGrant(v);}
+    if(user&&profile&&!authError){loadLikes(v);void loadSaved(v);void refreshKodesGrant(v);void refreshKodesIdentity(v);}
   }
   for(const article of document.querySelectorAll('article[data-article-slug]')) {
     const like=node('button','👍 Relevante');like.type='button';like.disabled=true;like.setAttribute('aria-pressed','false');

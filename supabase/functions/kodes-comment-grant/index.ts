@@ -52,7 +52,16 @@ Deno.serve(async req=>{
       if(saveError)return reply(origin,{error:'Grant renewal unavailable'},503);
       return reply(origin,{authorized:true,level:value.level,expires_at:expiresAt},200);
     }
-    return reply(origin,{linked:value.linked,level:value.level,can_comment:value.can_comment},200);
+    // Only the current authenticated reader receives their own identity fields.
+    const own=value.linked&&value.identity&&typeof value.identity==='object'?value.identity:null;
+    const profileUrl=typeof value.public_profile_url==='string'&&/^https:\/\/app\.kodes\.com\.br\/users\/[a-f0-9-]{36}$/i.test(value.public_profile_url)?value.public_profile_url:null;
+    return reply(origin,{linked:value.linked,level:value.level,can_comment:value.can_comment,
+      identity:own?{name:typeof own.name==='string'?own.name.slice(0,120):null,
+        kodes_id:typeof own.kodes_id==='string'?own.kodes_id.slice(0,120):null}:null,
+      next_step:typeof value.next_step==='string'?value.next_step.slice(0,300):'',
+      self_declared_areas:Array.isArray(value.self_declared_areas)?value.self_declared_areas.filter((x:unknown)=>typeof x==='string').slice(0,9):[],
+      public_profile_enabled:value.public_profile_enabled===true,
+      public_profile_url:value.public_profile_enabled===true?profileUrl:null},200);
   }
   const ticket=payload.ticket;
   if(typeof ticket!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(ticket))return reply(origin,{error:'Invalid ticket'},400);

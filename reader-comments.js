@@ -43,6 +43,8 @@
       if(error||typeof data?.linked!=='boolean'||!Number.isInteger(data.level))
         throw Error('Unable to verify Kodes identity');
       kodesIdentity={linked:data.linked,level:data.level,canComment:data.can_comment===true,
+        name:typeof data.identity?.name==='string'?data.identity.name:'',
+        credentialId:typeof data.identity?.kodes_id==='string'?data.identity.kodes_id:'',
         nextStep:typeof data.next_step==='string'?data.next_step:'',
         interests:Array.isArray(data.self_declared_areas)?data.self_declared_areas.filter(x=>typeof x==='string').slice(0,9):[],
         publicProfileEnabled:data.public_profile_enabled===true,
@@ -328,7 +330,7 @@
       const linked=Boolean(kodesIdentity?.linked);
       const level=linked?kodesIdentity.level:grantValid()?kodesGrant.level:0;
       identityStatus.textContent=linked
-        ?'Kodes-ID · N'+level+' · identidade vinculada'+(grantValid()?' · autorizado para comentar':'')
+        ?['K · N'+level,kodesIdentity.name,kodesIdentity.credentialId].filter(Boolean).join(' · ')
         :grantValid()?'Kodes-ID · N'+kodesGrant.level+' autorizado para comentar'
         :'Kodes-ID · Ativar identidade';
       identityStatus.classList.toggle('is-verified',linked||grantValid());
@@ -426,7 +428,7 @@
     else if(!grantValid()&&kodesIdentity?.linked&&kodesIdentity.canComment)
       p.hint.textContent='Seu Kodes-ID está vinculado e reconhecido. Clique para comentar: a autorização será renovada pelo servidor, sem novo cadastro.';
     else if(!grantValid())p.hint.textContent='Para comentar ou responder, vincule seu Kodes-ID e confirme o nível N2. Seus comentários anteriores permanecem visíveis.';
-    else p.hint.textContent='Kodes-ID N2 confirmado. Comentando como '+profile.display_name+'. '+(commentApprovalMode==='automatic'?'Publicação automática habilitada pela redação.':'Sujeito à aprovação editorial.');
+    else p.hint.textContent='Kodes-ID N'+(kodesIdentity?.level||kodesGrant.level)+' confirmado. Comentando como '+(kodesIdentity?.name||profile.display_name)+'. '+(commentApprovalMode==='automatic'?'Publicação automática habilitada pela redação.':'Sujeito à aprovação editorial.');
     // Preserve drafts and reply targets during Kodes-ID authorization.
     if(!canComment)clearReply(p);
   }
@@ -734,7 +736,7 @@
     save.onclick=()=>toggleSave(p);share.onclick=()=>shareArticle(p);
     gateButton.onclick=()=>{
       if(kodesIdentity?.linked&&kodesIdentity.canComment)void refreshLinkedKodesGrant();
-      else if(vorticePilot)authorizeKodes();else kodesIdentityDialog(false);
+      else if(vorticePilot&&user&&profile)authorizeKodes();else kodesIdentityDialog(false);
     };
     cancel.onclick=()=>clearReply(p);refresh.onclick=()=>load(p);details.addEventListener('toggle',()=>{if(details.open && ready)load(p);});
     form.addEventListener('submit',async e=>{

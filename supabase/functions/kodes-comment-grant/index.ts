@@ -26,6 +26,20 @@ Deno.serve(async req=>{
     const s=await req.text();if(s.length>1200)return reply(origin,{error:'Payload too large'},413);
     payload=JSON.parse(s);if(!payload||typeof payload!=='object'||Array.isArray(payload))throw Error('invalid');
   }catch{return reply(origin,{error:'Malformed request'},400);}
+  if(payload.action==='identity_status'){
+    // Reader token is checked locally and relayed only server-to-server
+    // to the fixed Kodes endpoint; never issue Kodes credentials here.
+    const upstream=await fetch(KODES_API,{method:'POST',headers:{
+      'content-type':'application/json','cache-control':'no-store'},
+      body:JSON.stringify({action:'identity_status',website_id:SITE,viva_access_token:bearer}),
+      signal:AbortSignal.timeout(9000)}).catch(()=>null);
+    if(!upstream)return reply(origin,{error:'Kodes identity service unavailable'},503);
+    if(!upstream.ok)return reply(origin,{error:'Unable to verify Kodes link',code:upstream.status},503);
+    const value=await upstream.json().catch(()=>null);
+    if(typeof value?.linked!=='boolean'||!Number.isInteger(value.level)||typeof value.can_comment!=='boolean')
+      return reply(origin,{error:'Invalid Kodes identity response'},503);
+    return reply(origin,{linked:value.linked,level:value.level,can_comment:value.can_comment},200);
+  }
   const ticket=payload.ticket;
   if(typeof ticket!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(ticket))return reply(origin,{error:'Invalid ticket'},400);
   // Forward Viva proof only to fixed, verified Kodes URL; no user-controlled URL.

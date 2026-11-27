@@ -22,7 +22,7 @@ for(const [name,pattern] of [
  ['Real Kodes N2 grant',/kodes-comment-grant/],
  ['Verified credential badge',/kodes_comment_signatures\(level,verified_at\)/],
  ['Comment reply nesting',/parent_id/],
- ['Kodes modal after approval',/kodesIdentityDialog\(true\)/],
+ ['Approved ticket refreshes persistent identity before returning to comment',/await refreshKodesIdentity\(authRevision\);\s*if\(authRevision!==revision\)return;\s*repaintGrants\(\);[\s\S]*?p\.input\.focus\(\)/],
  ['Entry click renews only verified linked identity',/gateButton\.onclick=\(\)=>\{[\s\S]*?kodesIdentity\?\.linked&&kodesIdentity\.canComment[\s\S]*?refreshLinkedKodesGrant\(\)/],
  ['Unlinked reader still enters consent modal',/else kodesIdentityDialog\(false\)/],
  ['Renewal is server-verified',/body:\{action:'refresh_linked'\}/],
@@ -32,6 +32,11 @@ for(const [name,pattern] of [
 ]){
  assert.match(reader,pattern,name);
 }
+
+const ticketHandler=reader.slice(reader.indexOf("window.addEventListener('message',async event=>"),reader.indexOf("let likesReady"));
+assert.ok(ticketHandler.includes("event.source!==kodesPopup"),'Ticket must originate from the expected popup');
+assert.ok(ticketHandler.includes("event.data?.state!==kodesState"),'Ticket must match the original request');
+assert.ok(!ticketHandler.includes('kodesIdentityDialog(true)'),'Successful authorization must not reopen onboarding');
 
 // Parse all inline JavaScript, excluding scripts with src.
 for(const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)){

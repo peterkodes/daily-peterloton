@@ -26,7 +26,7 @@ Deno.serve(async req=>{
     const s=await req.text();if(s.length>1200)return reply(origin,{error:'Payload too large'},413);
     payload=JSON.parse(s);if(!payload||typeof payload!=='object'||Array.isArray(payload))throw Error('invalid');
   }catch{return reply(origin,{error:'Malformed request'},400);}
-  if(payload.action==='identity_status'){
+  if(payload.action==='identity_status'||payload.action==='refresh_linked'){
     // Reader token is checked locally and relayed only server-to-server
     // to the fixed Kodes endpoint; never issue Kodes credentials here.
     const upstream=await fetch(KODES_API,{method:'POST',headers:{
@@ -38,6 +38,20 @@ Deno.serve(async req=>{
     const value=await upstream.json().catch(()=>null);
     if(typeof value?.linked!=='boolean'||!Number.isInteger(value.level)||typeof value.can_comment!=='boolean')
       return reply(origin,{error:'Invalid Kodes identity response'},503);
+    if(payload.action==='refresh_linked'){
+      // Only a fresh, independently validated Viva Auth session plus a still-
+      // active consented Kodes link can renew permission. No Kodes JWT, key,
+      // account provisioning or browser-supplied level is trusted.
+      if(!value.linked||!value.can_comment||value.level<2||value.level>5)
+        return reply(origin,{error:'Kodes N2 and a verified account link required'},403);
+      const now=Date.now(),expiresAt=new Date(now+120000).toISOString();
+      const {error:saveError}=await admin.from('kodes_comment_grants').upsert({
+        user_id:identity.user.id,level:value.level,issued_at:new Date(now).toISOString(),
+        expires_at:expiresAt,source:'dual_session_kodes',
+      },{onConflict:'user_id'});
+      if(saveError)return reply(origin,{error:'Grant renewal unavailable'},503);
+      return reply(origin,{authorized:true,level:value.level,expires_at:expiresAt},200);
+    }
     return reply(origin,{linked:value.linked,level:value.level,can_comment:value.can_comment},200);
   }
   const ticket=payload.ticket;

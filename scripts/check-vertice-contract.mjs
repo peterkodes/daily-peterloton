@@ -48,3 +48,10 @@ for(const file of ['reader-comments.js','admin.js','kodes-managed-admin.js']){
 }
 assert.ok(!html.includes('id="kodes-identity-guide"'),'Old promotional identity block must not return');
 console.log('Vértice integration surface regression checks passed');
+
+const pilot=reader.slice(reader.indexOf('// The new journey requests'),reader.indexOf("  window.addEventListener('message',async event=>{\n    if(vorticePilot||"));
+for(const pattern of ['event.origin!==KODES_ORIGIN','event.source!==kodesPopup','event.data?.state!==kodesState','vorticeReaderRevision!==revision','session.user.id!==user.id','await refreshKodesIdentity(v)','acknowledge(true)'])assert.ok(pilot.includes(pattern),'Missing Vortice pilot guard: '+pattern);
+assert.ok(pilot.indexOf('await refreshKodesIdentity(v)')<pilot.indexOf('acknowledge(true)'),'Identity must refresh before acknowledgement');
+assert.ok(!reader.includes('publicCards.get'),'Do not reuse potentially revoked public profile consent');
+assert.ok(reader.includes('kodesIdentity.credentialId'),'Actual credential should be visible to current owner');
+console.log('Vórtice pilot message and identity contract checks passed');

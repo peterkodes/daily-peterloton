@@ -23,8 +23,8 @@ for(const [name,pattern] of [
  ['Verified credential badge',/kodes_comment_signatures\(level,verified_at\)/],
  ['Comment reply nesting',/parent_id/],
  ['Approved ticket refreshes persistent identity before returning to comment',/await refreshKodesIdentity\(authRevision\);\s*if\(authRevision!==revision\)return;\s*repaintGrants\(\);[\s\S]*?p\.input\.focus\(\)/],
- ['Entry click renews only verified linked identity',/gateButton\.onclick=\(\)=>\{[\s\S]*?kodesIdentity\?\.linked&&kodesIdentity\.canComment[\s\S]*?refreshLinkedKodesGrant\(\)/],
- ['Unlinked reader still enters consent modal',/else kodesIdentityDialog\(false\)/],
+ ['Entry click renews only verified linked identity',/function beginParticipation\(p\)\{[\s\S]*?kodesIdentity\?\.linked&&kodesIdentity\.canComment[\s\S]*?refreshLinkedKodesGrant\(\)/],
+ ['Unlinked reader opens Vortice journey',/function beginParticipation\(p\)\{[\s\S]*?else authorizeKodes\(\)/],
  ['Renewal is server-verified',/body:\{action:'refresh_linked'\}/],
  ['No level without server proof',/if\(stamped&&Number\.isInteger\(stamped\.level\)/],
  ['Moderation choice from server',/kodes_comment_moderation_settings/],
@@ -55,3 +55,10 @@ assert.ok(pilot.indexOf('await refreshKodesIdentity(v)')<pilot.indexOf('acknowle
 assert.ok(!reader.includes('publicCards.get'),'Do not reuse potentially revoked public profile consent');
 assert.ok(reader.includes('kodesIdentity.credentialId'),'Actual credential should be visible to current owner');
 console.log('Vórtice pilot message and identity contract checks passed');
+
+assert.match(reader,/const vorticePilot=true;/,'Vortice must be default');
+assert.match(reader,/gateButton.onclick=\(\)=>beginParticipation\(p\)/,'Gate uses the same journey');
+assert.match(reader,/openDiscussion.onclick=[^\n]+beginParticipation\(p\)/,'Article directly initiates the journey');
+const accountSource=fs.readFileSync('reader-auth.js','utf8');
+new vm.Script(accountSource,{filename:'reader-auth.js'});
+assert.ok(accountSource.includes("returnLink.href='/#article-'+returnArticle"),'Return to original article');

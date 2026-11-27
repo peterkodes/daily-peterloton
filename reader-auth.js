@@ -8,6 +8,14 @@
   const initialError = new URLSearchParams(location.hash.slice(1)).get('error') || new URLSearchParams(location.search).get('error');
   const client = window.supabase.createClient('https://jyjrgdoeuzlvvpkymqsu.supabase.co', 'sb_publishable_suBMv7WnrejReyIswL19jw_ipsMz5Gr');
   let mode = 'login', currentUser = null, busy = false, revision = 0;
+  let awaitingConfirmation = false, confirmationEmail = '';
+  const confirmationMessage = 'Check your email to activate your account.';
+  function showConfirmation(email) {
+    awaitingConfirmation = true; confirmationEmail = email;
+    $('confirmation-email').textContent = email;
+    $('resend-status').textContent = '';
+    show('confirmation'); status(confirmationMessage);
+  }
   const activity = document.createElement('section');activity.className='card';activity.hidden=true;
   const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;return n;};
   const activityTitle=el('h2','My Activity');const metrics=el('p');const admin=el('a','Administration Center');admin.href='/admin';admin.hidden=true;
@@ -18,7 +26,7 @@
   let activityRequest=0;
   function articleLink(article){const link=el('a',article?.title||'Article unavailable');if(article?.slug&&/^[a-z0-9-]+$/.test(article.slug))link.href='/#article-'+article.slug;return link;}
   function clearActivity(){activityRequest++;activity.hidden=true;admin.hidden=true;metrics.textContent='';feedback.textContent='';commentsList.replaceChildren();likesList.replaceChildren();}
-  function show(panel) { ['guest','member','recovery'].forEach(id => { $(id).hidden = id !== panel; }); if(panel!=='member')clearActivity(); }
+  function show(panel) { ['guest','member','recovery','confirmation'].forEach(id => { $(id).hidden = id !== panel; }); if(panel!=='member')clearActivity(); }
   async function loadActivity(user,v){
     const req=++activityRequest,uid=user.id;
     const valid=()=>req===activityRequest&&v===revision&&currentUser?.id===uid&&!recovering;
@@ -79,23 +87,29 @@
     if (!result.data && name.length >= 2) {
       const inserted = await client.from('profiles').insert({id:user.id,display_name:name});
       if (version !== revision) return;
-      if (inserted.error && inserted.error.code !== '23505') { $('profile-name').value = name; status('Signed in. Please save your display name to finish your profile.'); return; }
+      if (inserted.error && inserted.error.code !== '23505') { $('profile-name').value = name; $('member-name').textContent = name; $('profile-settings').open = true; status('You are signed in. Your display name could not be saved automatically. You can retry in your account settings.'); return; }
       result = await client.from('profiles').select('display_name').eq('id',user.id).maybeSingle();
       if (version !== revision) return;
       if (result.error) { status('Signed in, but your profile could not be loaded.'); return; }
     }
     $('profile-name').value = result.data?.display_name || name;
-    status(result.data ? 'Signed in. Your reader profile is ready.' : 'Signed in. Please save a public display name.');
+    $('member-name').textContent = result.data?.display_name || name;
+    $('profile-settings').open = !result.data && !name;
+    status(result.data ? 'Account active. You can continue reading.' : 'You are signed in. You can set your public display name in account settings.');
   }
   async function renderSession(session) {
     const version = ++revision; clearActivity();
-    if (!session) { currentUser = null; recovering = false; show('guest'); if (initialError) status('The email link is invalid or expired. Request a new link.'); return; }
+    if (!session) { currentUser = null; recovering = false; show(awaitingConfirmation ? 'confirmation' : 'guest'); if (initialError && !awaitingConfirmation) status('The email link is invalid or expired. Request a new link.'); return; }
     const {data,error} = await client.auth.getUser();
     if (version !== revision) return;
     if (error || !data.user) { currentUser = null; show('guest'); status('Could not verify your session. Please sign in again.'); return; }
     currentUser = data.user;
+    awaitingConfirmation = false; confirmationEmail = '';
     if (recovering) { show('recovery'); status('Choose a new password.'); return; }
     $('member-email').textContent = currentUser.email || '';
+    $('member-name').textContent = '';
+    $('profile-name').value = '';
+    $('profile-settings').open = false;
     show('member'); await loadProfile(currentUser, version);
     if(version===revision && currentUser) await loadActivity(currentUser,version);
   }
@@ -111,7 +125,7 @@
         const {data,error} = await client.auth.signUp({email,password,options:{emailRedirectTo:redirectTo,data:{display_name:name}}});
         $('password').value = '';
         if (error) throw error;
-        if (data.session) await renderSession(data.session); else { setMode('login'); status('Check your email for a confirmation link before signing in.'); }
+        if (data.session) await renderSession(data.session); else { showConfirmation(email); }
       } else if (mode === 'reset') {
         const {error} = await client.auth.resetPasswordForEmail(email,{redirectTo});
         if (error) throw error;
@@ -124,6 +138,13 @@
       }
     });
   };
+  $('confirmation-login').onclick = () => { awaitingConfirmation = false; confirmationEmail = ''; setMode('login'); show('guest'); status('Enter your email and password.'); };
+  $('resend-confirmation').onclick = () => run(async () => {
+    if (!awaitingConfirmation || !confirmationEmail) return;
+    const {error} = await client.auth.resend({type:'signup',email:confirmationEmail,options:{emailRedirectTo:redirectTo}});
+    if (error) { $('resend-status').textContent = errorMessage(error); return; }
+    $('resend-status').textContent = 'Confirmation requested again. Check your email.';
+  });
   $('profile-form').onsubmit = event => { event.preventDefault(); run(async () => {
     if (!currentUser) return;
     const name = $('profile-name').value.trim();
@@ -133,7 +154,9 @@
     if (found.error) throw found.error;
     const result = found.data ? await client.from('profiles').update({display_name:name}).eq('id',id).select('id').single() : await client.from('profiles').insert({id,display_name:name});
     if (result.error) throw result.error;
-    status('Profile saved.');
+    if (currentUser?.id !== id) return;
+    $('member-name').textContent = name; $('profile-settings').open = false;
+    status('Display name updated.');
   }); };
   function logout() { run(async () => { const {error} = await client.auth.signOut(); if (error) throw error; currentUser=null; recovering=false; ++revision; setMode('login'); show('guest'); status('Signed out.'); }); }
   $('logout').onclick = logout; $('cancel-recovery').onclick = logout;
@@ -147,10 +170,10 @@
   setMode('login');
   client.auth.onAuthStateChange((event,session) => {
     if (event === 'PASSWORD_RECOVERY') recovering = true;
-    if (event === 'SIGNED_OUT') recovering = false;
+    if (event === 'SIGNED_OUT') { recovering = false; awaitingConfirmation = false; confirmationEmail = ''; }
     // Avoid awaiting another Supabase call from inside the auth callback.
     if (['INITIAL_SESSION','SIGNED_IN','SIGNED_OUT','PASSWORD_RECOVERY'].includes(event)) setTimeout(() => {
-      if (!session) { if (!busy && !initialError) status('Sign in or create an account.'); }
+      if (!session) { if (!busy && !initialError && !awaitingConfirmation) status('Sign in or create an account.'); }
       renderSession(session).catch(() => status('Could not load your account. Please reload.'));
     },0);
   });

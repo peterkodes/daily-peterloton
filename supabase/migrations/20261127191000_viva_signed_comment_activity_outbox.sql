@@ -45,7 +45,7 @@ create or replace function public.kodes_viva_enqueue_moderation_change()
 returns trigger language plpgsql security definer set search_path='' as $$
 declare slug text;
 begin
- if new.status is distinct from old.status and exists(
+ if (new.status is distinct from old.status or new.content is distinct from old.content) and exists(
   select 1 from public.kodes_comment_signatures where comment_id=new.id) then
   select a.slug into slug from public.articles a where a.id=new.article_id;
   if slug is not null then
@@ -62,7 +62,7 @@ begin
 end;$$;
 revoke all on function public.kodes_viva_enqueue_moderation_change() from public,anon,authenticated;
 drop trigger if exists kodes_viva_activity_moderation on public.comments;
-create trigger kodes_viva_activity_moderation after update of status on public.comments
+create trigger kodes_viva_activity_moderation after update of status,content on public.comments
  for each row execute function public.kodes_viva_enqueue_moderation_change();
 
 create or replace function public.kodes_viva_enqueue_comment_delete()

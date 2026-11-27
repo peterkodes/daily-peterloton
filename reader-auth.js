@@ -3,7 +3,11 @@
   const $ = id => document.getElementById(id);
   const status = message => { $('status').textContent = message; };
   if (!window.supabase?.createClient) { status('Unable to load the reader service. Please reload.'); return; }
-  const redirectTo = location.origin + '/account';
+  const returnArticle = new URLSearchParams(location.search).get('return_article') || '';
+  const validArticle = /^[a-z0-9-]{1,180}$/.test(returnArticle);
+  const redirectTo = location.origin + '/account' + (validArticle?'?return_article='+encodeURIComponent(returnArticle):'');
+  const returnLink = document.querySelector('#member .primary-link');
+  if(returnLink&&validArticle){returnLink.href='/#article-'+returnArticle;returnLink.textContent='Voltar à notícia e comentar';}
   let recovering = new URLSearchParams(location.hash.slice(1)).get('type') === 'recovery';
   const initialError = new URLSearchParams(location.hash.slice(1)).get('error') || new URLSearchParams(location.search).get('error');
   const client = window.supabase.createClient('https://jyjrgdoeuzlvvpkymqsu.supabase.co', 'sb_publishable_suBMv7WnrejReyIswL19jw_ipsMz5Gr');

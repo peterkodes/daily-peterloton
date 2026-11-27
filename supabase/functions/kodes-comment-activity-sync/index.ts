@@ -79,7 +79,16 @@ Deno.serve(async(req)=>{
    if(!updated)delivered++;
   }else{
    blocked++;
-   const reason=response?'upstream_'+response.status:'network_unavailable';
+   const detail=response?await response.clone().json().catch(()=>null):null;
+   const knownReasons=new Set([
+    'Server POST only','Publisher signature invalid','Publisher not authorized',
+    'Site, article or consented link unavailable','Invalid signed event',
+    'Invalid request','Unexpected event field',
+   ]);
+   // Store only a bounded known diagnostic category, never an arbitrary
+   // remote error body, token, or identifying user data.
+   const category=knownReasons.has(detail?.error)?detail.error.replaceAll(' ','_'):'unknown';
+   const reason=response?'upstream_'+response.status+'_'+category:'network_unavailable';
    await db.from('kodes_partner_comment_outbox').update({
     attempts:record.attempts+1,last_error:reason
    }).eq('event_id',record.event_id).is('delivered_at',null);

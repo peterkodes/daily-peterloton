@@ -150,17 +150,22 @@
       typeof event.data?.ticket!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(event.data.ticket)||
       !user||kodesBusy)return;
     kodesState='';kodesBusy=true;
+    const authRevision=revision;
     for(const p of panels)if(p.details.open)p.hint.textContent='Conferindo seu Kodes-ID com o servidor…';
     try{
       const {data,error}=await db.functions.invoke('kodes-comment-grant',{body:{ticket:event.data.ticket}});
+      if(authRevision!==revision)return;
       if(error||data?.authorized!==true||!Number.isInteger(data.level)||data.level<2||!data.expires_at)
         throw Error('Authorization failed');
       kodesGrant={level:data.level,expires_at:data.expires_at};
       kodesPopup?.close();kodesPopup=null;
+      await refreshKodesIdentity(authRevision);
+      if(authRevision!==revision)return;
       repaintGrants();
-      for(const p of panels)if(p.details.open)p.input.focus();
-      kodesIdentityDialog(true);
+      document.querySelector('.viva-kodes-auth-backdrop')?.remove();
+      for(const p of panels)if(p.details.open){p.hint.textContent='Kodes-ID confirmado. Você já pode comentar.';p.input.focus();}
     }catch{
+      if(authRevision!==revision)return;
       kodesGrant=null;repaintGrants();
       for(const p of panels)if(p.details.open)p.hint.textContent='Não foi possível validar seu Kodes-ID. Clique novamente em Ativar Kodes-ID.';
     }finally{kodesBusy=false;}

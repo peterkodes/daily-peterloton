@@ -46,21 +46,19 @@ Deno.serve(async(req)=>{
   {name:'Ed25519'},false,['sign']);}
  catch{return respond({error:'Private key unusable'},503);}
  const {data:items,error:queueError}=await db.from('kodes_partner_comment_outbox')
- .select('event_id,comment_id,event_status,source_created_at,source_updated_at,attempts,comments!inner(user_id,parent_id,articles!inner(slug))')
+ .select('event_id,comment_id,reader_user_id,article_slug,is_reply,event_status,source_created_at,source_updated_at,attempts')
  .is('delivered_at',null).lt('attempts',12).order('created_at',{ascending:true}).limit(20);
  if(queueError)return respond({error:'Outbox temporarily unavailable'},503);
  let delivered=0,blocked=0;
  for(const record of items||[]){
-  const local=Array.isArray(record.comments)?record.comments[0]:record.comments;
-  const article=Array.isArray(local?.articles)?local.articles[0]:local?.articles;
-  const external=article?.slug;
+  const external=record.article_slug;
   if(!external||!/^[A-Za-z0-9_.:@-]{1,200}$/.test(external)){
    blocked++;continue;
   }
   const issuedAt=new Date().toISOString();
-  const hashSubject=await sha(SITE+':'+local.user_id);
+  const hashSubject=await sha(SITE+':'+record.reader_user_id);
   const fields=[SITE,signer.signing_key_id,record.event_id,hashSubject,record.comment_id,
-    external,record.event_status,local.parent_id?'1':'0',
+    external,record.event_status,record.is_reply?'1':'0',
     new Date(record.source_created_at).toISOString(),new Date(record.source_updated_at).toISOString()];
   const payloadHash=await sha(fields.join('\n'));
   const message=['kodes-partner-comment-event-v1',SITE,signer.signing_key_id,issuedAt,payloadHash].join('\n');
@@ -71,7 +69,7 @@ Deno.serve(async(req)=>{
    body:JSON.stringify({
     website_id:SITE,key_id:signer.signing_key_id,event_id:record.event_id,
     external_subject_hash:hashSubject,external_comment_id:record.comment_id,
-    external_article_id:external,status:record.event_status,is_reply:!!local.parent_id,
+    external_article_id:external,status:record.event_status,is_reply:record.is_reply,
     source_created_at:fields[8],source_updated_at:fields[9],issued_at:issuedAt,signature
    }),signal:AbortSignal.timeout(9000)})}catch{}
   if(response?.ok){

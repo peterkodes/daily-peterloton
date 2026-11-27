@@ -18,6 +18,9 @@
   // Reading all historic comments remains free.
   let kodesGrant=null,kodesIdentity=null,kodesBusy=false,kodesPopup=null,kodesState='';
   const KODES_ORIGIN='https://app.kodes.com.br';
+  // Explicit pilot opt-in until the new backend and browser acceptance pass.
+  const vorticePilot=new URLSearchParams(location.search).get('kodes-ux')==='vortice';
+  let vorticeReaderRevision=-1;
   const grantValid=()=>Boolean(kodesGrant&&kodesGrant.level>=2&&Date.parse(kodesGrant.expires_at)>Date.now()+5000);
   function repaintGrants(){updateHeader();for(const p of panels)updateForm(p);}
   async function refreshKodesGrant(v=revision){
@@ -40,6 +43,8 @@
       if(error||typeof data?.linked!=='boolean'||!Number.isInteger(data.level))
         throw Error('Unable to verify Kodes identity');
       kodesIdentity={linked:data.linked,level:data.level,canComment:data.can_comment===true,
+        name:typeof data.identity?.name==='string'?data.identity.name:'',
+        credentialId:typeof data.identity?.kodes_id==='string'?data.identity.kodes_id:'',
         nextStep:typeof data.next_step==='string'?data.next_step:'',
         interests:Array.isArray(data.self_declared_areas)?data.self_declared_areas.filter(x=>typeof x==='string').slice(0,9):[],
         publicProfileEnabled:data.public_profile_enabled===true,
@@ -52,7 +57,7 @@
   async function refreshLinkedKodesGrant(){
     if(!ready||authError||!user||!profile||kodesBusy)return;
     if(!kodesIdentity?.linked||!kodesIdentity.canComment){
-      kodesIdentityDialog(false);return;
+      if(vorticePilot)authorizeKodes();else kodesIdentityDialog(false);return;
     }
     kodesBusy=true;
     for(const p of panels)if(p.details.open)p.hint.textContent='Conferindo a associação Kodes-ID no servidor…';
@@ -140,11 +145,51 @@
     if(kodesPopup&&!kodesPopup.closed){kodesPopup.focus();return;}
     kodesState=Array.from(crypto.getRandomValues(new Uint8Array(24)),b=>b.toString(16).padStart(2,'0')).join('');
     const params=new URLSearchParams({state:kodesState,origin:location.origin});
-    kodesPopup=window.open(KODES_ORIGIN+'/autorizar-comentario-viva?'+params,'viva-kodes-comments','width=650,height=760');
+    vorticeReaderRevision=revision;
+    kodesPopup=window.open(KODES_ORIGIN+(vorticePilot?'/connect/viva?':'/autorizar-comentario-viva?')+params,'viva-kodes-comments','width=520,height=760');
     if(!kodesPopup)for(const p of panels)if(p.details.open)p.hint.textContent='Permita a janela Kodes-ID no navegador e tente novamente.';
   }
+  // The new journey requests only the current verified portal session. No
+  // tokens in URLs, persistent storage or arbitrary postMessage destinations.
   window.addEventListener('message',async event=>{
-    if(event.origin!==KODES_ORIGIN||event.source!==kodesPopup||
+    if(!vorticePilot||event.origin!==KODES_ORIGIN||event.source!==kodesPopup||
+       event.data?.state!==kodesState||!user||!profile||!ready||authError||
+       vorticeReaderRevision!==revision)return;
+    const win=kodesPopup,nonce=kodesState,v=revision;
+    const stillCurrent=()=>v===revision&&win===kodesPopup&&nonce===kodesState;
+    if(event.data.type==='kodes:vortice:reader-request'){
+      try{
+        const {data,error}=await db.auth.getSession();
+        if(!stillCurrent())return;
+        const session=data?.session;
+        if(error||!session||session.user.id!==user.id)throw Error('Reader session unavailable');
+        win.postMessage({type:'kodes:vortice:reader-proof',state:nonce,access_token:session.access_token},KODES_ORIGIN);
+      }catch{if(stillCurrent())win.postMessage({type:'kodes:vortice:reader-proof',state:nonce},KODES_ORIGIN);}
+      return;
+    }
+    if(event.data.type!=='kodes:vortice:ticket'||kodesBusy||
+       typeof event.data.ticket!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(event.data.ticket)||
+       typeof event.data.request!=='string'||!/^[a-f0-9-]{36}$/i.test(event.data.request))return;
+    const request=event.data.request;
+    kodesBusy=true;
+    const acknowledge=accepted=>{if(stillCurrent())win.postMessage({type:'kodes:vortice:ack',state:nonce,request,accepted},KODES_ORIGIN);};
+    try{
+      const {data,error}=await db.functions.invoke('kodes-comment-grant',{body:{ticket:event.data.ticket}});
+      if(!stillCurrent())return;
+      if(error||data?.authorized!==true||!Number.isInteger(data.level)||data.level<2||!data.expires_at)throw Error('Grant rejected');
+      kodesGrant={level:data.level,expires_at:data.expires_at};
+      await refreshKodesIdentity(v);
+      if(!stillCurrent())return;
+      if(!kodesIdentity?.linked||!kodesIdentity.canComment||!grantValid())throw Error('Identity unavailable');
+      repaintGrants();acknowledge(true);
+      kodesState='';kodesPopup=null;
+      document.querySelector('.viva-kodes-auth-backdrop')?.remove();
+      for(const p of panels)if(p.details.open){p.hint.textContent='Kodes-ID confirmado. Você já pode comentar.';p.input.focus();}
+    }catch{if(stillCurrent()){kodesGrant=null;repaintGrants();acknowledge(false);}}
+    finally{kodesBusy=false;}
+  });
+  window.addEventListener('message',async event=>{
+    if(vorticePilot||event.origin!==KODES_ORIGIN||event.source!==kodesPopup||
       event.data?.type!=='kodes:viva:comment-authorization'||
       event.data?.state!==kodesState||
       typeof event.data?.ticket!=='string'||!/^[A-Za-z0-9_-]{43}$/.test(event.data.ticket)||
@@ -285,7 +330,7 @@
       const linked=Boolean(kodesIdentity?.linked);
       const level=linked?kodesIdentity.level:grantValid()?kodesGrant.level:0;
       identityStatus.textContent=linked
-        ?'Kodes-ID · N'+level+' · identidade vinculada'+(grantValid()?' · autorizado para comentar':'')
+        ?['K · N'+level,kodesIdentity.name,kodesIdentity.credentialId].filter(Boolean).join(' · ')
         :grantValid()?'Kodes-ID · N'+kodesGrant.level+' autorizado para comentar'
         :'Kodes-ID · Ativar identidade';
       identityStatus.classList.toggle('is-verified',linked||grantValid());
@@ -295,7 +340,7 @@
         identityStatus.onclick=event=>{event.preventDefault();openKodesJourney();};
       }else{
         identityStatus.removeAttribute('aria-haspopup');
-        identityStatus.onclick=null;
+        identityStatus.onclick=vorticePilot?event=>{event.preventDefault();if(user&&profile)authorizeKodes();else location.assign('/account');}:null;
       }
     }
   }
@@ -322,9 +367,10 @@
     backdrop.onclick=event=>{if(event.target===backdrop)dismiss();};
     const credential=node('div',undefined,'reader-kodes-credential-summary');
     credential.append(node('small','KODES-ID · VIVA MÍDIA · VÍNCULO CONFIRMADO'),
-      node('strong',profile?.display_name||'Leitor Viva Mídia'),
+      node('strong',kodesIdentity.name||profile?.display_name||'Leitor Viva Mídia'),
       node('p','N'+level+' · '+(['','Leitor','Comentarista','Colaborador','Autor','Editor'][level]||'Participante')),
       node('small','Seu nível é consultado no servidor Kodes. Autorias e especialidades são aprovadas por site.'));
+    if(kodesIdentity.credentialId)credential.append(node('small','Credencial · '+kodesIdentity.credentialId));
     dialog.append(heading,credential);
     if(kodesIdentity.interests?.length)
       dialog.append(node('p','Áreas declaradas: '+kodesIdentity.interests.join(' · ')));
@@ -383,7 +429,7 @@
     else if(!grantValid()&&kodesIdentity?.linked&&kodesIdentity.canComment)
       p.hint.textContent='Seu Kodes-ID está vinculado e reconhecido. Clique para comentar: a autorização será renovada pelo servidor, sem novo cadastro.';
     else if(!grantValid())p.hint.textContent='Para comentar ou responder, vincule seu Kodes-ID e confirme o nível N2. Seus comentários anteriores permanecem visíveis.';
-    else p.hint.textContent='Kodes-ID N2 confirmado. Comentando como '+profile.display_name+'. '+(commentApprovalMode==='automatic'?'Publicação automática habilitada pela redação.':'Sujeito à aprovação editorial.');
+    else p.hint.textContent='Kodes-ID N'+(kodesIdentity?.level||kodesGrant.level)+' confirmado. Comentando como '+(kodesIdentity?.name||profile.display_name)+'. '+(commentApprovalMode==='automatic'?'Publicação automática habilitada pela redação.':'Sujeito à aprovação editorial.');
     // Preserve drafts and reply targets during Kodes-ID authorization.
     if(!canComment)clearReply(p);
   }
@@ -433,10 +479,9 @@
 
   const KODES_PROFILE_API='https://marwnbmablxzziyvhxof.supabase.co/functions/v1/kodes-public-participant';
   const KODES_SITE='7554902f-4506-494e-8f69-50e4cef8e767';
-  const publicCards=new Map();
   const consentedCard=userId=>{
     if(typeof userId!=='string'||!/^[0-9a-f-]{36}$/i.test(userId))return Promise.resolve(null);
-    if(!publicCards.has(userId)){
+    {
       const url=new URL(KODES_PROFILE_API);
       url.searchParams.set('site',KODES_SITE);url.searchParams.set('user',userId);
       const query=fetch(url,{method:'GET',mode:'cors',credentials:'omit',cache:'no-store'})
@@ -445,9 +490,8 @@
            typeof info.display_name==='string'&&Number.isInteger(info.level)&&
            info.level>=1&&info.level<=5?info:null)
         .catch(()=>null);
-      publicCards.set(userId,query);
+      return query;
     }
-    return publicCards.get(userId);
   };
   function openParticipantProfile(name,visibleCount,userId,signature=null){
     const existing=document.querySelector('.reader-kodes-profile-backdrop');
@@ -482,7 +526,7 @@
     backdrop.append(dialog);document.body.append(backdrop);
     document.addEventListener('keydown',stop);close.focus();
     void consentedCard(userId).then(info=>{
-      if(!active)return;
+      if(!active||!dialog.isConnected)return;
       publicInfo.replaceChildren();
       if(!info){
         publicInfo.append(node('p','Perfil Kodes-ID não disponibilizado publicamente por este participante ou temporariamente indisponível.'));
@@ -631,6 +675,8 @@
     } catch(e) { if(request!==p.request || authRev!==revision)return; p.article=null;updateForm(p);p.list.replaceChildren(node('p','Unable to load comments. Use Refresh comments to try again.')); }
   }
   async function updateSession(session) {
+    if(vorticePilot&&kodesPopup){kodesPopup.close();kodesPopup=null;kodesState='';}
+    document.querySelectorAll('.reader-kodes-profile-backdrop').forEach(el=>el.remove());
     const v=++revision;user=null;profile=null;ready=false;authError=false;staff=false;liked.clear();saved.clear();likesReady=false;likesError=false;kodesGrant=null;kodesIdentity=null;updateHeader();
     for(const p of panels){p.request++;p.list.replaceChildren();p.article=null;clearReply(p);p.input.value='';p.likeMessage.textContent='';paintLike(p);updateForm(p);}
     try {
@@ -690,7 +736,7 @@
     save.onclick=()=>toggleSave(p);share.onclick=()=>shareArticle(p);
     gateButton.onclick=()=>{
       if(kodesIdentity?.linked&&kodesIdentity.canComment)void refreshLinkedKodesGrant();
-      else kodesIdentityDialog(false);
+      else if(vorticePilot&&user&&profile)authorizeKodes();else kodesIdentityDialog(false);
     };
     cancel.onclick=()=>clearReply(p);refresh.onclick=()=>load(p);details.addEventListener('toggle',()=>{if(details.open && ready)load(p);});
     form.addEventListener('submit',async e=>{

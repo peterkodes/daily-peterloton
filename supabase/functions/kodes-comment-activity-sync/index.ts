@@ -88,7 +88,10 @@ Deno.serve(async(req)=>{
    // Store only a bounded known diagnostic category, never an arbitrary
    // remote error body, token, or identifying user data.
    const category=knownReasons.has(detail?.error)?detail.error.replaceAll(' ','_'):'unknown';
-   const reason=response?'upstream_'+response.status+'_'+category:'network_unavailable';
+   const knownCodes=new Set(['service_role_context_missing','signing_key_revoked',
+    'identity_link_missing','article_not_registered','activity_owner_conflict','unclassified']);
+   const reasonCode=knownCodes.has(detail?.code)?detail.code:category;
+   const reason=response?'upstream_'+response.status+'_'+reasonCode:'network_unavailable';
    await db.from('kodes_partner_comment_outbox').update({
     attempts:record.attempts+1,last_error:reason
    }).eq('event_id',record.event_id).is('delivered_at',null);
